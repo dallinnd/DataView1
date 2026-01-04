@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Data View</title>
-  <link rel="stylesheet" href="style.css"> <!-- optional -->
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="app-header">
@@ -12,13 +12,12 @@
   </header>
   <main id="app"></main>
 
-  <!-- Load rendering and logic -->
   <script src="functions.js"></script>
   <script>
-    // Initialize on DOM ready
+    // Initialize app
     document.addEventListener('DOMContentLoaded', () => {
-      loadViewsFromLocal();  // Load any saved views
-      renderHome();          // Render home screen
+      loadViewsFromLocal();
+      renderHome();
     });
   </script>
 </body>
