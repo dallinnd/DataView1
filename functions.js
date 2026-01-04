@@ -305,10 +305,13 @@ function openBoxEditor(boxDiv, view){
   editPanel.appendChild(titleInput);
 
   // Background gradients 3x4
+  const gradTitle = document.createElement('p');
+  gradTitle.textContent = 'Background';
+  editPanel.appendChild(gradTitle);
+
   const gradients=[
     '#cce5ff','#d4edda','#fff3cd','#f8d7da','#e2e3e5','#f5c6cb','#bee5eb','#d1ecf1','#f1f1f1','#e2f0cb','#fef0cb','#fde2e2'
   ];
-  editPanel.appendChild(document.createElement('p')).textContent='Background';
   const gradContainer=document.createElement('div');
   gradContainer.style.display='grid';
   gradContainer.style.gridTemplateColumns='repeat(4,1fr)';
@@ -322,7 +325,10 @@ function openBoxEditor(boxDiv, view){
   editPanel.appendChild(gradContainer);
 
   // Font colors 3x2
-  editPanel.appendChild(document.createElement('p')).textContent='Text Color';
+  const colorTitle = document.createElement('p');
+  colorTitle.textContent = 'Text Color';
+  editPanel.appendChild(colorTitle);
+
   const colors=['#000','#fff','#333','#666','#007bff','#28a745'];
   const colorContainer=document.createElement('div');
   colorContainer.style.display='grid';
@@ -385,7 +391,6 @@ function openBoxEditor(boxDiv, view){
   }
 
   renderMainTextPanel('Static');
-
   staticBtn.onclick=()=>renderMainTextPanel('Static');
   variableBtn.onclick=()=>renderMainTextPanel('Variable');
 
@@ -404,4 +409,4 @@ function openBoxEditor(boxDiv, view){
   editPanel.appendChild(saveBtn);
 
   document.body.appendChild(overlay);
-}
+    }
