@@ -1,13 +1,19 @@
 import { renderHome } from './home.js';
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js');
-}
+console.log('app.js loaded');
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('DOM ready');
+
   const app = document.getElementById('app');
 
-  window.navigate = function (screen, data) {
+  if (!app) {
+    console.error('App container not found');
+    return;
+  }
+
+  window.navigate = (screen, data) => {
+    console.log('Navigating to', screen.name);
     app.innerHTML = '';
     screen(app, data);
   };
