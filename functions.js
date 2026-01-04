@@ -21,9 +21,17 @@ function renderHome() {
   container.innerHTML = '';
 
   const createBtn = document.createElement('button');
-  createBtn.textContent = 'Create New View';
-  createBtn.onclick = () => renderCanvas({ name:'New View', boxes:[], excelBase64:null, createdAt:Date.now(), updatedAt:Date.now() });
-  container.appendChild(createBtn);
+createBtn.textContent = 'Create New View';
+createBtn.onclick = () => {
+    const newView = {
+        name: 'New View',
+        boxes: [],
+        excelBase64: null,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+    };
+    renderCanvas(newView);
+};
 
   const sectionTitle = document.createElement('h2');
   sectionTitle.textContent = 'View Existing Displays';
