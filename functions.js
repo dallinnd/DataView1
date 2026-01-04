@@ -22,7 +22,7 @@ function renderHome() {
 
   const createBtn = document.createElement('button');
   createBtn.textContent = 'Create New View';
-  createBtn.onclick = () => renderUploadScreen();
+  createBtn.onclick = () => renderCanvas({ name:'New View', boxes:[], excelBase64:null, createdAt:Date.now(), updatedAt:Date.now() });
   container.appendChild(createBtn);
 
   const sectionTitle = document.createElement('h2');
@@ -47,7 +47,7 @@ function renderHome() {
       const right = document.createElement('div');
       const editBtn = document.createElement('button');
       editBtn.textContent = 'Edit';
-      editBtn.onclick = () => renderUploadScreen(view);
+      editBtn.onclick = () => renderCanvas(view);
       right.appendChild(editBtn);
 
       card.appendChild(left);
@@ -58,199 +58,166 @@ function renderHome() {
   }
 }
 
-// ----------------------- Upload Screen -----------------------
-function renderUploadScreen(existingView) {
-  // Skip upload if Excel already exists
-  if (existingView && existingView.excelBase64) {
-    renderCanvas(existingView);
-    return;
-  }
-
-  const container = document.getElementById('app');
-  container.innerHTML = '';
-
-  const title = document.createElement('h2');
-  title.textContent = existingView ? 'Edit View: ' + existingView.name : 'New View: Upload Spreadsheet';
-  container.appendChild(title);
-
-  const fileInput = document.createElement('input');
-  fileInput.type = 'file';
-  fileInput.accept = '.xlsx,.xls';
-  container.appendChild(fileInput);
-
-  const nextBtn = document.createElement('button');
-  nextBtn.textContent = 'Next';
-  nextBtn.onclick = () => {
-    if (!fileInput.files[0]) {
-      alert('Please select an Excel file.');
-      return;
-    }
-
-    let view = existingView;
-    if (!existingView) {
-      view = { name: 'New View', boxes: [], excelBase64: '', createdAt: Date.now(), updatedAt: Date.now() };
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        view.excelBase64 = e.target.result;
-        saveViewsToLocal();
-        renderCanvas(view);
-      };
-      reader.readAsDataURL(fileInput.files[0]);
-    }
-  };
-
-  const backBtn = document.createElement('button');
-  backBtn.textContent = 'Back';
-  backBtn.onclick = renderHome;
-
-  container.appendChild(nextBtn);
-  container.appendChild(backBtn);
-}
-
 // ----------------------- Canvas Screen -----------------------
 function renderCanvas(existingView) {
   const container = document.getElementById('app');
   container.innerHTML = '';
 
-  const view = existingView || { 
-    name: 'New View', 
-    boxes: [], 
-    createdAt: Date.now(), 
-    updatedAt: Date.now() 
-  };
+  const view = existingView;
 
-  // Header
+  // ---------------- Canvas Header ----------------
   const header = document.createElement('div');
   header.className = 'canvas-header';
 
   const nameInput = document.createElement('input');
   nameInput.value = view.name;
   nameInput.style.fontSize='20px';
-  nameInput.style.width='60%';
+  nameInput.style.width='40%';
 
   const backBtn = document.createElement('button');
   backBtn.textContent = 'Save & Back';
   backBtn.onclick = () => {
     view.name = nameInput.value;
     view.updatedAt = Date.now();
-    if (!existingView) views.push(view);
+    if (!views.includes(view)) views.push(view);
     saveViewsToLocal();
     renderHome();
+  };
+
+  // ---------------- Excel Upload Button ----------------
+  const excelBtn = document.createElement('button');
+  excelBtn.textContent = view.excelBase64 ? 'Change Excel' : 'Upload Excel';
+  excelBtn.className = 'upload-btn';
+  excelBtn.onclick = () => {
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.xlsx,.xls';
+    fileInput.style.display = 'none';
+    fileInput.onchange = () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        view.excelBase64 = e.target.result;
+        view.updatedAt = Date.now();
+        saveViewsToLocal();
+        alert('Excel uploaded successfully!');
+      };
+      reader.readAsDataURL(file);
+    };
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    document.body.removeChild(fileInput);
   };
 
   header.appendChild(nameInput);
   header.appendChild(backBtn);
   container.appendChild(header);
+  container.appendChild(excelBtn);
 
-  // Canvas grid
+  // ---------------- Canvas Grid ----------------
   const canvas = document.createElement('div');
   canvas.className = 'canvas';
+  container.appendChild(canvas);
 
   const gridCells = [];
-  for (let i=0; i<24; i++){
+  for (let i=0;i<24;i++){
     const cell = document.createElement('div');
-    cell.className = 'grid-cell';
+    cell.className='grid-cell';
     canvas.appendChild(cell);
     gridCells.push(cell);
   }
-  container.appendChild(canvas);
 
-  // Grid Occupancy
-  const gridOccupied = Array(4).fill(null).map(() => Array(6).fill(false));
+  // ---------------- Grid Occupancy ----------------
+  const gridOccupied = Array(4).fill(null).map(()=>Array(6).fill(false));
 
-  // Box Palette
+  // ---------------- Box Palette ----------------
   const palette = document.createElement('div');
-  palette.className = 'palette';
+  palette.className='palette';
 
   const boxTypes = [
-    { label:'2×2', w:2, h:2 },
-    { label:'2×1', w:2, h:1 },
-    { label:'4×1', w:4, h:1 },
-    { label:'6×1', w:6, h:1 },
-    { label:'3×3', w:3, h:3 },
-    { label:'4×4', w:4, h:4 },
+    {label:'2×2', w:2, h:2},
+    {label:'2×1', w:2, h:1},
+    {label:'4×1', w:4, h:1},
+    {label:'6×1', w:6, h:1},
+    {label:'3×3', w:3, h:3},
+    {label:'4×4', w:4, h:4},
   ];
 
-  let selectedBox = null;
-
-  boxTypes.forEach(box => {
-    const btn = document.createElement('button');
-    btn.textContent = box.label;
-    btn.onclick = () => { selectedBox = box; };
+  let selectedBox=null;
+  boxTypes.forEach(box=>{
+    const btn=document.createElement('button');
+    btn.textContent=box.label;
+    btn.onclick=()=>{selectedBox=box;};
     palette.appendChild(btn);
   });
-
   container.appendChild(palette);
 
-  // Load existing boxes
-  if (view.boxes) {
-    const canvasRect = canvas.getBoundingClientRect();
-    const cellWidth = (canvasRect.width - 10*5) / 6;
-    const cellHeight = (canvasRect.height - 10*3) / 4;
+  // ---------------- Load Existing Boxes ----------------
+  const canvasRect=canvas.getBoundingClientRect();
+  const cellWidth=(canvasRect.width-10*5)/6;
+  const cellHeight=(canvasRect.height-10*3)/4;
 
-    view.boxes.forEach(box => {
-      const boxDiv = document.createElement('div');
-      boxDiv.className = 'box';
-      boxDiv.textContent = box.label;
-      boxDiv.style.width = `${cellWidth*box.w + (box.w-1)*10}px`;
-      boxDiv.style.height = `${cellHeight*box.h + (box.h-1)*10}px`;
-      boxDiv.style.left = `${box.col*(cellWidth+10)}px`;
-      boxDiv.style.top = `${box.row*(cellHeight+10)}px`;
+  if(view.boxes){
+    view.boxes.forEach(box=>{
+      const boxDiv=document.createElement('div');
+      boxDiv.className='box';
+      boxDiv.textContent=box.label;
+      boxDiv.style.width=`${cellWidth*box.w+(box.w-1)*10}px`;
+      boxDiv.style.height=`${cellHeight*box.h+(box.h-1)*10}px`;
+      boxDiv.style.left=`${box.col*(cellWidth+10)}px`;
+      boxDiv.style.top=`${box.row*(cellHeight+10)}px`;
       canvas.appendChild(boxDiv);
 
-      for (let r = box.row; r < box.row + box.h; r++) {
-        for (let c = box.col; c < box.col + box.w; c++) {
-          gridOccupied[r][c] = true;
+      for(let r=box.row;r<box.row+box.h;r++){
+        for(let c=box.col;c<box.col+box.w;c++){
+          gridOccupied[r][c]=true;
         }
       }
     });
   }
 
-  // Click to place boxes
-  canvas.addEventListener('click', (e) => {
-    if (!selectedBox) return;
-    const index = gridCells.indexOf(e.target);
-    if (index === -1) return;
+  // ---------------- Click to Place Boxes ----------------
+  canvas.addEventListener('click',(e)=>{
+    if(!selectedBox) return;
+    const index=gridCells.indexOf(e.target);
+    if(index===-1) return;
 
-    const col = index % 6;
-    const row = Math.floor(index / 6);
+    const col=index%6;
+    const row=Math.floor(index/6);
 
-    if (col + selectedBox.w > 6 || row + selectedBox.h > 4) {
+    if(col+selectedBox.w>6 || row+selectedBox.h>4){
       alert('Box too big for this position!');
       return;
     }
 
-    for (let r = row; r < row + selectedBox.h; r++) {
-      for (let c = col; c < col + selectedBox.w; c++) {
-        if (gridOccupied[r][c]) {
+    for(let r=row;r<row+selectedBox.h;r++){
+      for(let c=col;c<col+selectedBox.w;c++){
+        if(gridOccupied[r][c]){
           alert('Space already occupied!');
           return;
         }
       }
     }
 
-    const canvasRect = canvas.getBoundingClientRect();
-    const cellWidth = (canvasRect.width - 10*5) / 6;
-    const cellHeight = (canvasRect.height - 10*3) / 4;
-
-    const boxDiv = document.createElement('div');
-    boxDiv.className = 'box';
-    boxDiv.textContent = selectedBox.label;
-    boxDiv.style.width = `${cellWidth*selectedBox.w + (selectedBox.w-1)*10}px`;
-    boxDiv.style.height = `${cellHeight*selectedBox.h + (selectedBox.h-1)*10}px`;
-    boxDiv.style.left = `${col*(cellWidth+10)}px`;
-    boxDiv.style.top = `${row*(cellHeight+10)}px`;
+    const boxDiv=document.createElement('div');
+    boxDiv.className='box';
+    boxDiv.textContent=selectedBox.label;
+    boxDiv.style.width=`${cellWidth*selectedBox.w+(selectedBox.w-1)*10}px`;
+    boxDiv.style.height=`${cellHeight*selectedBox.h+(selectedBox.h-1)*10}px`;
+    boxDiv.style.left=`${col*(cellWidth+10)}px`;
+    boxDiv.style.top=`${row*(cellHeight+10)}px`;
     canvas.appendChild(boxDiv);
 
-    for (let r = row; r < row + selectedBox.h; r++) {
-      for (let c = col; c < col + selectedBox.w; c++) {
-        gridOccupied[r][c] = true;
+    for(let r=row;r<row+selectedBox.h;r++){
+      for(let c=col;c<col+selectedBox.w;c++){
+        gridOccupied[r][c]=true;
       }
     }
 
-    if (!view.boxes) view.boxes = [];
-    view.boxes.push({ ...selectedBox, col, row });
-    selectedBox = null;
+    if(!view.boxes) view.boxes=[];
+    view.boxes.push({...selectedBox,col,row});
+    selectedBox=null;
     saveViewsToLocal();
   });
 }
