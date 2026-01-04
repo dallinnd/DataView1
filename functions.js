@@ -39,22 +39,19 @@ function renderHome() {
       const card = document.createElement('div');
       card.className = 'view-card';
 
+      const left = document.createElement('div');
       const name = document.createElement('strong');
       name.textContent = view.name;
+      left.appendChild(name);
 
-      const boxCount = document.createElement('span');
-      boxCount.style.marginLeft = '10px';
-      boxCount.style.color = '#666';
-      const numBoxes = view.boxes ? view.boxes.length : 0;
-      boxCount.textContent = `Boxes: ${numBoxes}`;
-
+      const right = document.createElement('div');
       const editBtn = document.createElement('button');
       editBtn.textContent = 'Edit';
       editBtn.onclick = () => renderUploadScreen(view);
+      right.appendChild(editBtn);
 
-      card.appendChild(name);
-      card.appendChild(boxCount);
-      card.appendChild(editBtn);
+      card.appendChild(left);
+      card.appendChild(right);
 
       container.appendChild(card);
     });
@@ -63,6 +60,12 @@ function renderHome() {
 
 // ----------------------- Upload Screen -----------------------
 function renderUploadScreen(existingView) {
+  // Skip upload if Excel already exists
+  if (existingView && existingView.excelBase64) {
+    renderCanvas(existingView);
+    return;
+  }
+
   const container = document.getElementById('app');
   container.innerHTML = '';
 
@@ -78,7 +81,7 @@ function renderUploadScreen(existingView) {
   const nextBtn = document.createElement('button');
   nextBtn.textContent = 'Next';
   nextBtn.onclick = () => {
-    if (!fileInput.files[0] && !existingView) {
+    if (!fileInput.files[0]) {
       alert('Please select an Excel file.');
       return;
     }
@@ -93,8 +96,6 @@ function renderUploadScreen(existingView) {
         renderCanvas(view);
       };
       reader.readAsDataURL(fileInput.files[0]);
-    } else {
-      renderCanvas(view);
     }
   };
 
@@ -154,10 +155,10 @@ function renderCanvas(existingView) {
   }
   container.appendChild(canvas);
 
-  // ------------------- Grid Occupancy -------------------
+  // Grid Occupancy
   const gridOccupied = Array(4).fill(null).map(() => Array(6).fill(false));
 
-  // ------------------- Box Palette -------------------
+  // Box Palette
   const palette = document.createElement('div');
   palette.className = 'palette';
 
@@ -181,20 +182,20 @@ function renderCanvas(existingView) {
 
   container.appendChild(palette);
 
-  // ------------------- Load Existing Boxes -------------------
+  // Load existing boxes
   if (view.boxes) {
+    const canvasRect = canvas.getBoundingClientRect();
+    const cellWidth = (canvasRect.width - 10*5) / 6;
+    const cellHeight = (canvasRect.height - 10*3) / 4;
+
     view.boxes.forEach(box => {
       const boxDiv = document.createElement('div');
+      boxDiv.className = 'box';
       boxDiv.textContent = box.label;
-      boxDiv.style.background = '#34d399';
-      boxDiv.style.gridColumn = `${box.col + 1} / span ${box.w}`;
-      boxDiv.style.gridRow = `${box.row + 1} / span ${box.h}`;
-      boxDiv.style.display = 'flex';
-      boxDiv.style.alignItems = 'center';
-      boxDiv.style.justifyContent = 'center';
-      boxDiv.style.borderRadius = '8px';
-      boxDiv.style.color = 'white';
-      boxDiv.style.fontWeight = 'bold';
+      boxDiv.style.width = `${cellWidth*box.w + (box.w-1)*10}px`;
+      boxDiv.style.height = `${cellHeight*box.h + (box.h-1)*10}px`;
+      boxDiv.style.left = `${box.col*(cellWidth+10)}px`;
+      boxDiv.style.top = `${box.row*(cellHeight+10)}px`;
       canvas.appendChild(boxDiv);
 
       for (let r = box.row; r < box.row + box.h; r++) {
@@ -205,7 +206,7 @@ function renderCanvas(existingView) {
     });
   }
 
-  // ------------------- Click to place boxes -------------------
+  // Click to place boxes
   canvas.addEventListener('click', (e) => {
     if (!selectedBox) return;
     const index = gridCells.indexOf(e.target);
@@ -228,17 +229,17 @@ function renderCanvas(existingView) {
       }
     }
 
+    const canvasRect = canvas.getBoundingClientRect();
+    const cellWidth = (canvasRect.width - 10*5) / 6;
+    const cellHeight = (canvasRect.height - 10*3) / 4;
+
     const boxDiv = document.createElement('div');
+    boxDiv.className = 'box';
     boxDiv.textContent = selectedBox.label;
-    boxDiv.style.background = '#34d399';
-    boxDiv.style.gridColumn = `${col+1} / span ${selectedBox.w}`;
-    boxDiv.style.gridRow = `${row+1} / span ${selectedBox.h}`;
-    boxDiv.style.display = 'flex';
-    boxDiv.style.alignItems = 'center';
-    boxDiv.style.justifyContent = 'center';
-    boxDiv.style.borderRadius = '8px';
-    boxDiv.style.color = 'white';
-    boxDiv.style.fontWeight = 'bold';
+    boxDiv.style.width = `${cellWidth*selectedBox.w + (selectedBox.w-1)*10}px`;
+    boxDiv.style.height = `${cellHeight*selectedBox.h + (selectedBox.h-1)*10}px`;
+    boxDiv.style.left = `${col*(cellWidth+10)}px`;
+    boxDiv.style.top = `${row*(cellHeight+10)}px`;
     canvas.appendChild(boxDiv);
 
     for (let r = row; r < row + selectedBox.h; r++) {
@@ -252,4 +253,4 @@ function renderCanvas(existingView) {
     selectedBox = null;
     saveViewsToLocal();
   });
-                       }
+}
