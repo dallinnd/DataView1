@@ -33,7 +33,7 @@ export function renderImport(container) {
     };
 
     await saveView(view);
-    navigate(renderHome);
+    import('./canvas.js').then(m => navigate(m.renderCanvas, view));
   };
 
   container.append(title, input);
