@@ -83,14 +83,21 @@ function renderCanvas(existingView) {
   nameInput.style.width='40%';
 
   const backBtn = document.createElement('button');
-  backBtn.textContent = 'Save & Back';
   backBtn.onclick = () => {
     view.name = nameInput.value;
     view.updatedAt = Date.now();
-    if (!views.includes(view)) views.push(view);
+
+    // If view is new (not yet in views array), add it
+    const existingIndex = views.findIndex(v => v.createdAt === view.createdAt);
+    if (existingIndex === -1) {
+        views.push(view);
+    } else {
+        views[existingIndex] = view; // overwrite existing
+    }
+
     saveViewsToLocal();
     renderHome();
-  };
+};
 
   // ---------------- Excel Upload Button ----------------
   const excelBtn = document.createElement('button');
