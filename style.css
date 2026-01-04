@@ -46,3 +46,73 @@ button.secondary {
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   cursor: pointer;
 }
+
+/* ---------- Canvas Editor ---------- */
+
+.canvas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.view-name-input {
+  font-size: 20px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 60%;
+}
+
+/* 16:9 Canvas */
+.canvas-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.canvas {
+  width: 90vw;
+  max-width: 960px;
+  aspect-ratio: 16 / 9;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 10px 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+
+/* 6x4 Grid */
+.grid {
+  height: 100%;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.grid-cell {
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+}
+
+/* ---------- Box Palette ---------- */
+
+.box-palette {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 10px 0;
+}
+
+.palette-box {
+  min-width: 80px;
+  height: 50px;
+  background: #e5e7eb;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  cursor: grab;
+  user-select: none;
+}
