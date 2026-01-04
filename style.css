@@ -1,118 +1,80 @@
-* {
-  box-sizing: border-box;
-  font-family: system-ui, sans-serif;
-}
-
 body {
-  margin: 0;
-  background: #f4f6f8;
+  font-family: sans-serif;
+  margin:0;
+  background:#f4f6f8;
 }
 
 .app-header {
-  background: #ffffff;
-  padding: 16px;
-  border-bottom: 1px solid #ddd;
+  background:#fff;
+  padding:16px;
+  border-bottom:1px solid #ddd;
 }
 
 main {
-  padding: 20px;
+  padding:20px;
 }
 
 button {
-  padding: 12px 18px;
-  border-radius: 10px;
-  border: none;
-  background: #2563eb;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
+  padding:12px 18px;
+  border-radius:10px;
+  border:none;
+  background:#2563eb;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+  margin:5px;
 }
 
-button.secondary {
-  background: #e5e7eb;
-  color: #111;
-}
-
-.view-list {
-  margin-top: 30px;
-  display: grid;
-  gap: 12px;
+input {
+  padding:6px 10px;
+  border-radius:6px;
+  border:1px solid #ccc;
 }
 
 .view-card {
-  background: white;
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  cursor: pointer;
+  background:#fff;
+  padding:10px;
+  margin-bottom:10px;
+  border-radius:10px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.1);
 }
-
-/* ---------- Canvas Editor ---------- */
 
 .canvas-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.view-name-input {
-  font-size: 20px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  width: 60%;
-}
-
-/* 16:9 Canvas */
-.canvas-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 20px;
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:16px;
+  align-items:center;
 }
 
 .canvas {
-  width: 90vw;
-  max-width: 960px;
-  aspect-ratio: 16 / 9;
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 10px 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-}
-
-/* 6x4 Grid */
-.grid {
-  height: 100%;
-  display: grid;
+  width:90vw;
+  max-width:960px;
+  aspect-ratio:16 / 9;
+  background:white;
+  border-radius:16px;
+  display:grid;
   grid-template-columns: repeat(6, 1fr);
   grid-template-rows: repeat(4, 1fr);
-  gap: 10px;
+  gap:10px;
+  padding:10px;
+  margin-bottom:15px;
 }
 
 .grid-cell {
+  background: #f0f0f0;
   border: 1px dashed #d1d5db;
   border-radius: 8px;
+  width: 100%;
+  height: 100%;
 }
 
-/* ---------- Box Palette ---------- */
-
-.box-palette {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 10px 0;
+.palette {
+  display:flex;
+  gap:10px;
+  margin-top:15px;
+  flex-wrap:wrap;
 }
 
-.palette-box {
-  min-width: 80px;
-  height: 50px;
-  background: #e5e7eb;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 500;
-  cursor: grab;
-  user-select: none;
+.palette button {
+  background:#10b981; /* green */
 }
