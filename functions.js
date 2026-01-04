@@ -20,7 +20,6 @@ function renderHome() {
   const container = document.getElementById('app');
   container.innerHTML = '';
 
-  // Create New View button
   const createBtn = document.createElement('button');
   createBtn.textContent = 'Create New View';
   createBtn.onclick = () => {
@@ -28,6 +27,7 @@ function renderHome() {
       name: 'New View',
       boxes: [],
       excelBase64: null,
+      importedColumns: [],
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -35,7 +35,6 @@ function renderHome() {
   };
   container.appendChild(createBtn);
 
-  // Existing Views section
   const sectionTitle = document.createElement('h2');
   sectionTitle.textContent = 'View Existing Displays';
   container.appendChild(sectionTitle);
@@ -49,7 +48,6 @@ function renderHome() {
     views.forEach(view => {
       const card = document.createElement('div');
       card.className = 'view-card';
-
       const left = document.createElement('div');
       const name = document.createElement('strong');
       name.textContent = view.name;
@@ -73,7 +71,7 @@ function renderCanvas(view) {
   const container = document.getElementById('app');
   container.innerHTML = '';
 
-  // ---------------- Canvas Header ----------------
+  // Header
   const header = document.createElement('div');
   header.className = 'canvas-header';
   header.style.display = 'flex';
@@ -86,12 +84,11 @@ function renderCanvas(view) {
   nameInput.style.width = '40%';
   nameInput.style.marginRight = '10px';
 
-  // Excel Upload Button (orange)
   const excelBtn = document.createElement('button');
   excelBtn.textContent = view.excelBase64 ? 'Change Excel' : 'Upload Excel';
   excelBtn.style.background = '#f97316';
-  excelBtn.style.marginRight = '10px';
   excelBtn.style.color = 'white';
+  excelBtn.style.marginRight = '10px';
   excelBtn.onclick = () => {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
@@ -104,6 +101,7 @@ function renderCanvas(view) {
       reader.onload = (e) => {
         view.excelBase64 = e.target.result;
         view.updatedAt = Date.now();
+        view.importedColumns = ['Column1','Column2','Column3']; // Replace with parsing later
         saveViewsToLocal();
         excelBtn.textContent = 'Change Excel';
         alert('Excel uploaded successfully!');
@@ -115,7 +113,6 @@ function renderCanvas(view) {
     document.body.removeChild(fileInput);
   };
 
-  // Save & Back button
   const backBtn = document.createElement('button');
   backBtn.textContent = 'Save & Back';
   backBtn.onclick = () => {
@@ -135,296 +132,205 @@ function renderCanvas(view) {
   header.appendChild(backBtn);
   container.appendChild(header);
 
-  // ---------------- Canvas Grid ----------------
+  // Canvas grid
   const canvas = document.createElement('div');
   canvas.className = 'canvas';
   canvas.style.width = '100%';
-  canvas.style.aspectRatio = '6 / 4'; // width : height = 6:4
+  canvas.style.aspectRatio = '6 / 4';
   canvas.style.position = 'relative';
   canvas.style.display = 'grid';
   canvas.style.gridTemplateColumns = 'repeat(6, 1fr)';
   canvas.style.gridTemplateRows = 'repeat(4, 1fr)';
   canvas.style.gap = '10px';
   canvas.style.padding = '0';
-  canvas.style.margin = '0';
   canvas.style.background = '#f0f0f0';
-  canvas.style.border = '1px solid #ccc';
   container.appendChild(canvas);
 
-  const gap = 10;
   const gridCols = 6;
   const gridRows = 4;
+  const gap = 10;
+  const gridOccupied = Array(gridRows).fill(null).map(()=>Array(gridCols).fill(false));
 
-  const gridOccupied = Array(gridRows).fill(null).map(() => Array(gridCols).fill(false));
-
-  // Semi-transparent placeholder cells
-  for (let i = 0; i < gridCols * gridRows; i++) {
+  // Semi-transparent placeholders
+  for(let i=0;i<gridCols*gridRows;i++){
     const cell = document.createElement('div');
-    cell.className = 'grid-cell';
-    cell.style.background = 'rgba(0,0,0,0.05)';
+    cell.className='grid-cell';
+    cell.style.background='rgba(0,0,0,0.05)';
     canvas.appendChild(cell);
   }
 
-  // ---------------- Box Palette ----------------
+  // Box palette
   const palette = document.createElement('div');
-  palette.className = 'palette';
-  palette.style.marginTop = '10px';
-
+  palette.style.marginTop='10px';
   const boxTypes = [
-    { label: '2×2', w: 2, h: 2 },
-    { label: '2×1', w: 2, h: 1 },
-    { label: '4×1', w: 4, h: 1 },
-    { label: '6×1', w: 6, h: 1 },
-    { label: '3×3', w: 3, h: 3 },
-    { label: '4×4', w: 4, h: 4 },
+    { label: '2×2', w: 2, h:2 }, { label:'2×1', w:2, h:1 }, { label:'4×1', w:4, h:1 },
+    { label:'6×1', w:6, h:1 }, { label:'3×3', w:3, h:3 }, { label:'4×4', w:4, h:4 }
   ];
-
   let selectedBox = null;
-  boxTypes.forEach(box => {
-    const btn = document.createElement('button');
-    btn.textContent = box.label;
-    btn.onclick = () => selectedBox = box;
+  boxTypes.forEach(b=>{
+    const btn=document.createElement('button');
+    btn.textContent=b.label;
+    btn.onclick=()=> selectedBox=b;
     palette.appendChild(btn);
   });
   container.appendChild(palette);
 
-  // ---------------- Cell size for absolute positioning ----------------
-  const cellWidth = (canvas.clientWidth - gap * (gridCols - 1)) / gridCols;
-  const cellHeight = (canvas.clientHeight - gap * (gridRows - 1)) / gridRows;
+  const cellWidth = (canvas.clientWidth-(gridCols-1)*gap)/gridCols;
+  const cellHeight = (canvas.clientHeight-(gridRows-1)*gap)/gridRows;
 
-  // ---------------- Load existing boxes ----------------
-  if (view.boxes) {
-    view.boxes.forEach(box => addBoxToCanvas(box, canvas, gridOccupied, cellWidth, cellHeight, view));
-  }
+  if(view.boxes) view.boxes.forEach(box=>addBoxToCanvas(box, canvas, gridOccupied, cellWidth, cellHeight, view));
 
-  // ---------------- Click to place new boxes ----------------
-  canvas.addEventListener('click', (e) => {
-    if (!selectedBox) return;
-
+  canvas.addEventListener('click', (e)=>{
+    if(!selectedBox) return;
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const col = Math.floor(x / (cellWidth + gap));
-    const row = Math.floor(y / (cellHeight + gap));
-
-    if (col + selectedBox.w > gridCols || row + selectedBox.h > gridRows) {
-      alert('Box too big for this position!');
+    const col = Math.floor(x/(cellWidth+gap));
+    const row = Math.floor(y/(cellHeight+gap));
+    if(col+selectedBox.w>gridCols || row+selectedBox.h>gridRows){
+      alert('Box too big!');
       return;
     }
-
-    for (let r = row; r < row + selectedBox.h; r++) {
-      for (let c = col; c < col + selectedBox.w; c++) {
-        if (gridOccupied[r][c]) {
-          alert('Space already occupied!');
+    for(let r=row;r<row+selectedBox.h;r++)
+      for(let c=col;c<col+selectedBox.w;c++)
+        if(gridOccupied[r][c]){
+          alert('Space occupied!');
           return;
         }
-      }
-    }
 
-    const boxData = { ...selectedBox, col, row, title: 'Title', text: 'Box Variable' };
-    if (!view.boxes) view.boxes = [];
+    const boxData={...selectedBox,col,row,title:'Title',text:'Box Variable'};
     view.boxes.push(boxData);
-
-    addBoxToCanvas(boxData, canvas, gridOccupied, cellWidth, cellHeight, view);
-
-    selectedBox = null;
+    addBoxToCanvas(boxData,canvas,gridOccupied,cellWidth,cellHeight,view);
+    selectedBox=null;
     saveViewsToLocal();
   });
 }
 
 // ----------------------- Add box helper -----------------------
-function addBoxToCanvas(boxData, canvas, gridOccupied, cellWidth, cellHeight, view) {
-  const boxDiv = document.createElement('div');
-  boxDiv.className = 'box';
-  boxDiv.textContent = boxData.text;
-  boxDiv.dataset.title = boxData.title;
-  boxDiv.dataset.text = boxData.text;
-  boxDiv.dataset.col = boxData.col;
-  boxDiv.dataset.row = boxData.row;
-  boxDiv.dataset.w = boxData.w;
-  boxDiv.dataset.h = boxData.h;
-  boxDiv.style.position = 'absolute';
-  boxDiv.style.width = `${cellWidth * boxData.w + (boxData.w - 1) * 10}px`;
-  boxDiv.style.height = `${cellHeight * boxData.h + (boxData.h - 1) * 10}px`;
-  boxDiv.style.left = `${boxData.col * (cellWidth + 10)}px`;
-  boxDiv.style.top = `${boxData.row * (cellHeight + 10)}px`;
-  boxDiv.style.background = 'rgba(0,0,255,0.2)';
-  boxDiv.style.border = '1px solid blue';
-  boxDiv.style.display = 'flex';
-  boxDiv.style.flexDirection = 'column';
-  boxDiv.style.justifyContent = 'center';
-  boxDiv.style.alignItems = 'center';
-  boxDiv.style.cursor = 'pointer';
+function addBoxToCanvas(boxData,canvas,gridOccupied,cellWidth,cellHeight,view){
+  const boxDiv=document.createElement('div');
+  boxDiv.className='box';
+  boxDiv.dataset.col=boxData.col;
+  boxDiv.dataset.row=boxData.row;
+  boxDiv.dataset.w=boxData.w;
+  boxDiv.dataset.h=boxData.h;
+  boxDiv.dataset.title=boxData.title;
+  boxDiv.dataset.text=boxData.text;
+  boxDiv.style.position='absolute';
+  boxDiv.style.left=boxData.col*(cellWidth+10)+'px';
+  boxDiv.style.top=boxData.row*(cellHeight+10)+'px';
+  boxDiv.style.width=cellWidth*boxData.w+(boxData.w-1)*10+'px';
+  boxDiv.style.height=cellHeight*boxData.h+(boxData.h-1)*10+'px';
+  boxDiv.style.background='rgba(0,0,255,0.2)';
+  boxDiv.style.border='1px solid blue';
+  boxDiv.style.display='flex';
+  boxDiv.style.flexDirection='column';
+  boxDiv.style.justifyContent='center';
+  boxDiv.style.alignItems='center';
+  boxDiv.style.cursor='pointer';
+  boxDiv.textContent=boxData.text;
 
-  // Mark occupied
-  for (let r = boxData.row; r < boxData.row + boxData.h; r++) {
-    for (let c = boxData.col; c < boxData.col + boxData.w; c++) {
-      gridOccupied[r][c] = true;
-    }
-  }
+  for(let r=boxData.row;r<boxData.row+boxData.h;r++)
+    for(let c=boxData.col;c<boxData.col+boxData.w;c++)
+      gridOccupied[r][c]=true;
 
   canvas.appendChild(boxDiv);
 
-  // Click popup
-  boxDiv.addEventListener('click', (e) => {
+  boxDiv.addEventListener('click',(e)=>{
     e.stopPropagation();
-    openBoxPopup(boxDiv, view, gridOccupied, canvas);
+    openBoxActionPopup(boxDiv, view, gridOccupied, canvas);
   });
 }
 
-// ----------------------- Box popup -----------------------
-function openBoxPopup(boxDiv, view, gridOccupied, canvas) {
-  const overlay = document.createElement('div');
-  overlay.className = 'popup-overlay';
-  overlay.style.position = 'fixed';
-  overlay.style.top = 0;
-  overlay.style.left = 0;
-  overlay.style.width = '100%';
-  overlay.style.height = '100%';
-  overlay.style.background = 'rgba(0,0,0,0.3)';
-  overlay.style.display = 'flex';
-  overlay.style.alignItems = 'center';
-  overlay.style.justifyContent = 'center';
-  overlay.style.zIndex = 1000;
+// ----------------------- Box Popups -----------------------
+function openBoxActionPopup(boxDiv, view, gridOccupied, canvas){
+  const overlay=document.createElement('div');
+  overlay.className='popup-overlay';
+  overlay.style.position='fixed';
+  overlay.style.top=0; overlay.style.left=0;
+  overlay.style.width='100%'; overlay.style.height='100%';
+  overlay.style.background='rgba(0,0,0,0.3)';
+  overlay.style.display='flex';
+  overlay.style.alignItems='center';
+  overlay.style.justifyContent='center';
+  overlay.style.zIndex=1000;
 
-  const popup = document.createElement('div');
-  popup.className = 'box-popup';
-  popup.style.background = 'white';
-  popup.style.padding = '20px';
-  popup.style.borderRadius = '12px';
-  popup.style.width = '400px';
-  popup.style.display = 'flex';
-  popup.style.flexDirection = 'column';
-  popup.style.alignItems = 'stretch';
+  const popup=document.createElement('div');
+  popup.style.background='white';
+  popup.style.borderRadius='12px';
+  popup.style.padding='20px';
+  popup.style.display='flex';
+  popup.style.justifyContent='space-around';
+  popup.style.minWidth='300px';
 
-  // ---------------- Buttons Row ----------------
-  const buttonsRow = document.createElement('div');
-  buttonsRow.style.display = 'flex';
-  buttonsRow.style.justifyContent = 'space-between';
-  buttonsRow.style.marginBottom = '15px';
+  const deleteBtn=document.createElement('button'); deleteBtn.textContent='Delete'; deleteBtn.style.background='red'; deleteBtn.style.color='white';
+  deleteBtn.onclick=()=>{canvas.removeChild(boxDiv); for(let r=boxDiv.dataset.row;r<Number(boxDiv.dataset.row)+Number(boxDiv.dataset.h);r++) for(let c=boxDiv.dataset.col;c<Number(boxDiv.dataset.col)+Number(boxDiv.dataset.w);c++) gridOccupied[r][c]=false; const idx=view.boxes.findIndex(b=>b.col==boxDiv.dataset.col&&b.row==boxDiv.dataset.row); if(idx!==-1)view.boxes.splice(idx,1); saveViewsToLocal(); document.body.removeChild(overlay);};
 
-  const trashBtn = document.createElement('button');
-  trashBtn.textContent = '🗑';
-  trashBtn.style.background = 'red';
-  trashBtn.style.color = 'white';
-  trashBtn.onclick = () => {
-    // Remove box
-    canvas.removeChild(boxDiv);
+  const editBtn=document.createElement('button'); editBtn.textContent='Edit'; editBtn.style.background='green'; editBtn.style.color='white';
+  editBtn.onclick=()=>{ document.body.removeChild(overlay); openFullBoxEditor(boxDiv, view); };
 
-    // Free occupied
-    for (let r = boxDiv.dataset.row; r < Number(boxDiv.dataset.row)+Number(boxDiv.dataset.h); r++) {
-      for (let c = boxDiv.dataset.col; c < Number(boxDiv.dataset.col)+Number(boxDiv.dataset.w); c++) {
-        gridOccupied[r][c]=false;
-      }
-    }
+  const backBtn=document.createElement('button'); backBtn.textContent='Back'; backBtn.style.background='gray'; backBtn.style.color='white';
+  backBtn.onclick=()=>document.body.removeChild(overlay);
 
-    // Remove from view.boxes
-    const idx = view.boxes.findIndex(b => b.col==boxDiv.dataset.col && b.row==boxDiv.dataset.row);
-    if(idx!==-1) view.boxes.splice(idx,1);
-    saveViewsToLocal();
-    document.body.removeChild(overlay);
-  };
-
-  const editBtn = document.createElement('button');
-  editBtn.textContent = '✏️ Edit';
-  editBtn.style.background = 'green';
-  editBtn.style.color = 'white';
-  editBtn.onclick = () => {
-    openBoxEditPreview(boxDiv, view);
-    document.body.removeChild(overlay);
-  };
-
-  const backBtn = document.createElement('button');
-  backBtn.textContent = '↩ Back';
-  backBtn.style.background = 'blue';
-  backBtn.style.color = 'white';
-  backBtn.onclick = () => document.body.removeChild(overlay);
-
-  buttonsRow.appendChild(trashBtn);
-  buttonsRow.appendChild(editBtn);
-  buttonsRow.appendChild(backBtn);
-  popup.appendChild(buttonsRow);
-
-  // ---------------- Box Info Preview ----------------
-  const infoDiv = document.createElement('div');
-  infoDiv.style.display = 'flex';
-  infoDiv.style.flexDirection = 'column';
-  infoDiv.style.alignItems = 'stretch';
-  infoDiv.style.gap = '10px';
-
-  // Title input
-  const titleInput = document.createElement('input');
-  titleInput.value = boxDiv.dataset.title || 'Title';
-  titleInput.placeholder = 'Title';
-  infoDiv.appendChild(titleInput);
-
-  // Main text input
-  const textInput = document.createElement('input');
-  textInput.value = boxDiv.dataset.text || 'Box Variable';
-  textInput.placeholder = 'Main Text / Variable';
-  infoDiv.appendChild(textInput);
-
-  // Color pickers
-  const bgColorInput = document.createElement('input');
-  bgColorInput.type = 'color';
-  bgColorInput.value = boxDiv.style.background || '#aaddff';
-  const textColorInput = document.createElement('input');
-  textColorInput.type = 'color';
-  textColorInput.value = boxDiv.style.color || '#000000';
-
-  const bgLabel = document.createElement('label');
-  bgLabel.textContent = 'Background: ';
-  bgLabel.appendChild(bgColorInput);
-
-  const textLabel = document.createElement('label');
-  textLabel.textContent = 'Text: ';
-  textLabel.appendChild(textColorInput);
-
-  infoDiv.appendChild(bgLabel);
-  infoDiv.appendChild(textLabel);
-
-  // Font size input
-  const fontSizeInput = document.createElement('input');
-  fontSizeInput.type = 'number';
-  fontSizeInput.min = 8;
-  fontSizeInput.max = 100;
-  fontSizeInput.value = parseInt(boxDiv.style.fontSize) || 16;
-  const fontLabel = document.createElement('label');
-  fontLabel.textContent = 'Font Size: ';
-  fontLabel.appendChild(fontSizeInput);
-  infoDiv.appendChild(fontLabel);
-
-  popup.appendChild(infoDiv);
-
-  // ---------------- Save Button ----------------
-  const saveBtn = document.createElement('button');
-  saveBtn.textContent = 'Save Box';
-  saveBtn.style.background = 'green';
-  saveBtn.style.color = 'white';
-  saveBtn.style.marginTop = '15px';
-  saveBtn.onclick = () => {
-    // Update boxDiv and data
-    boxDiv.dataset.title = titleInput.value;
-    boxDiv.dataset.text = textInput.value;
-    boxDiv.style.background = bgColorInput.value;
-    boxDiv.style.color = textColorInput.value;
-    boxDiv.style.fontSize = fontSizeInput.value + 'px';
-    boxDiv.textContent = textInput.value;
-
-    const boxData = view.boxes.find(b => b.col==boxDiv.dataset.col && b.row==boxDiv.dataset.row);
-    if(boxData){
-      boxData.title = titleInput.value;
-      boxData.text = textInput.value;
-      boxData.bgColor = bgColorInput.value;
-      boxData.textColor = textColorInput.value;
-      boxData.fontSize = fontSizeInput.value;
-    }
-
-    saveViewsToLocal();
-    document.body.removeChild(overlay);
-  };
-
-  popup.appendChild(saveBtn);
+  popup.appendChild(deleteBtn); popup.appendChild(editBtn); popup.appendChild(backBtn);
   overlay.appendChild(popup);
   document.body.appendChild(overlay);
 }
+
+// ----------------------- Full Box Editor -----------------------
+function openFullBoxEditor(boxDiv, view){
+  const overlay=document.createElement('div');
+  overlay.className='popup-overlay';
+  overlay.style.position='fixed'; overlay.style.top=0; overlay.style.left=0;
+  overlay.style.width='100%'; overlay.style.height='100%';
+  overlay.style.background='rgba(0,0,0,0.3)';
+  overlay.style.display='flex'; overlay.style.alignItems='center'; overlay.style.justifyContent='center';
+  overlay.style.zIndex=1000;
+
+  const editor=document.createElement('div');
+  editor.style.background='white'; editor.style.width='90%'; editor.style.height='90%';
+  editor.style.display='flex'; editor.style.borderRadius='12px';
+  overlay.appendChild(editor);
+
+  const preview=document.createElement('div'); preview.style.flex='3'; preview.style.display='flex';
+  preview.style.flexDirection='column'; preview.style.justifyContent='center'; preview.style.alignItems='center';
+  preview.style.border='1px solid #ccc'; preview.style.margin='10px'; preview.style.position='relative';
+  preview.style.background=boxDiv.style.background;
+
+  const title=document.createElement('div'); title.textContent=boxDiv.dataset.title; title.style.fontSize='14px';
+  title.style.position='absolute'; title.style.top='5px'; title.style.textAlign='center'; preview.appendChild(title);
+
+  const mainText=document.createElement('div'); mainText.textContent=boxDiv.dataset.text; mainText.style.fontSize=boxDiv.style.fontSize||'16px';
+  mainText.style.color=boxDiv.style.color||'#000'; mainText.style.textAlign='center';
+  mainText.style.display='flex'; mainText.style.justifyContent='center'; mainText.style.alignItems='center';
+  mainText.style.flex='1'; preview.appendChild(mainText);
+
+  editor.appendChild(preview);
+
+  // Right panel, background gradients, text color, font size, static/variable
+  const editPanel=document.createElement('div'); editPanel.style.flex='2'; editPanel.style.display='flex'; editPanel.style.flexDirection='column'; editPanel.style.margin='10px';
+  const gradients=['linear-gradient(135deg,#f6d365,#fda085)','linear-gradient(135deg,#a1c4fd,#c2e9fb)','linear-gradient(135deg,#d4fc79,#96e6a1)','linear-gradient(135deg,#fbc2eb,#a6c1ee)','linear-gradient(135deg,#84fab0,#8fd3f4)','linear-gradient(135deg,#fccb90,#d57eeb)','linear-gradient(135deg,#e0c3fc,#8ec5fc)','linear-gradient(135deg,#f093fb,#f5576c)','linear-gradient(135deg,#43e97b,#38f9d7)','linear-gradient(135deg,#fa709a,#fee140)','linear-gradient(135deg,#30cfd0,#330867)','linear-gradient(135deg,#ff9a9e,#fad0c4)'];
+  const bgTitle=document.createElement('div'); bgTitle.textContent='Background:'; editPanel.appendChild(bgTitle);
+  gradients.forEach(g=>{const b=document.createElement('button'); b.style.background=g; b.style.width='30px'; b.style.height='30px'; b.style.margin='3px'; b.onclick=()=>preview.style.background=g; editPanel.appendChild(b);});
+
+  const textColorTitle=document.createElement('div'); textColorTitle.textContent='Text Color:'; textColorTitle.style.marginTop='10px'; editPanel.appendChild(textColorTitle);
+  const blackBtn=document.createElement('button'); blackBtn.textContent='Black'; blackBtn.style.margin='3px'; blackBtn.onclick=()=>mainText.style.color='black';
+  const whiteBtn=document.createElement('button'); whiteBtn.textContent='White'; whiteBtn.style.margin='3px'; whiteBtn.onclick=()=>mainText.style.color='white';
+  editPanel.appendChild(blackBtn); editPanel.appendChild(whiteBtn);
+
+  const fontDiv=document.createElement('div'); fontDiv.style.marginTop='10px';
+  const minusBtn=document.createElement('button'); minusBtn.textContent='-'; const plusBtn=document.createElement('button'); plusBtn.textContent='+';
+  minusBtn.onclick=()=>mainText.style.fontSize=(parseInt(mainText.style.fontSize)||16)-1+'px';
+  plusBtn.onclick=()=>mainText.style.fontSize=(parseInt(mainText.style.fontSize)||16)+1+'px';
+  fontDiv.appendChild(minusBtn); fontDiv.appendChild(plusBtn); editPanel.appendChild(fontDiv);
+
+  const toggleDiv=document.createElement('div'); toggleDiv.style.marginTop='10px';
+  const staticBtn=document.createElement('button'); staticBtn.textContent='Static';
+  const variableBtn=document.createElement('button'); variableBtn.textContent='Variable';
+  toggleDiv.appendChild(staticBtn); toggleDiv.appendChild(variableBtn); editPanel.appendChild(toggleDiv);
+
+  const staticInput=document.createElement('input'); staticInput.value=mainText.textContent; staticInput.style.display='block'; staticInput.style.marginTop='10px';
+  const variableList=document.createElement('div'); variableList.style.display='none'; variableList.style.flexWrap='wrap'; variableList.style.marginTop='10px'; variableList.style.gap='5px';
+  staticBtn.onclick=()=>{ staticInput.style.display='block'; variableList.style.display='none'; mainText.textContent=staticInput.value; };
+  staticInput.oninput=()=>mainText.textContent=staticInput.value;
+  variable
