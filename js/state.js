@@ -15,5 +15,5 @@ export async function saveView(view) {
 
 export async function getAllViews() {
   const db = await dbPromise;
-  return await db.getAll('views');
+  return db.getAll('views');
 }
