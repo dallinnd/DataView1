@@ -20,19 +20,22 @@ function renderHome() {
   const container = document.getElementById('app');
   container.innerHTML = '';
 
+  // Create New View button
   const createBtn = document.createElement('button');
-createBtn.textContent = 'Create New View';
-createBtn.onclick = () => {
+  createBtn.textContent = 'Create New View';
+  createBtn.onclick = () => {
     const newView = {
-        name: 'New View',
-        boxes: [],
-        excelBase64: null,
-        createdAt: Date.now(),
-        updatedAt: Date.now()
+      name: 'New View',
+      boxes: [],
+      excelBase64: null,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
     };
     renderCanvas(newView);
-};
+  };
+  container.appendChild(createBtn);
 
+  // Existing Views section
   const sectionTitle = document.createElement('h2');
   sectionTitle.textContent = 'View Existing Displays';
   container.appendChild(sectionTitle);
@@ -60,18 +63,15 @@ createBtn.onclick = () => {
 
       card.appendChild(left);
       card.appendChild(right);
-
       container.appendChild(card);
     });
   }
 }
 
 // ----------------------- Canvas Screen -----------------------
-function renderCanvas(existingView) {
+function renderCanvas(view) {
   const container = document.getElementById('app');
   container.innerHTML = '';
-
-  const view = existingView;
 
   // ---------------- Canvas Header ----------------
   const header = document.createElement('div');
@@ -79,25 +79,30 @@ function renderCanvas(existingView) {
 
   const nameInput = document.createElement('input');
   nameInput.value = view.name;
-  nameInput.style.fontSize='20px';
-  nameInput.style.width='40%';
+  nameInput.style.fontSize = '20px';
+  nameInput.style.width = '40%';
 
   const backBtn = document.createElement('button');
+  backBtn.textContent = 'Save & Back';
   backBtn.onclick = () => {
     view.name = nameInput.value;
     view.updatedAt = Date.now();
 
-    // If view is new (not yet in views array), add it
+    // Save or update view in views array
     const existingIndex = views.findIndex(v => v.createdAt === view.createdAt);
     if (existingIndex === -1) {
-        views.push(view);
+      views.push(view);
     } else {
-        views[existingIndex] = view; // overwrite existing
+      views[existingIndex] = view;
     }
 
     saveViewsToLocal();
     renderHome();
-};
+  };
+
+  header.appendChild(nameInput);
+  header.appendChild(backBtn);
+  container.appendChild(header);
 
   // ---------------- Excel Upload Button ----------------
   const excelBtn = document.createElement('button');
@@ -124,10 +129,6 @@ function renderCanvas(existingView) {
     fileInput.click();
     document.body.removeChild(fileInput);
   };
-
-  header.appendChild(nameInput);
-  header.appendChild(backBtn);
-  container.appendChild(header);
   container.appendChild(excelBtn);
 
   // ---------------- Canvas Grid ----------------
@@ -136,103 +137,103 @@ function renderCanvas(existingView) {
   container.appendChild(canvas);
 
   const gridCells = [];
-  for (let i=0;i<24;i++){
+  for (let i = 0; i < 24; i++) {
     const cell = document.createElement('div');
-    cell.className='grid-cell';
+    cell.className = 'grid-cell';
     canvas.appendChild(cell);
     gridCells.push(cell);
   }
 
   // ---------------- Grid Occupancy ----------------
-  const gridOccupied = Array(4).fill(null).map(()=>Array(6).fill(false));
+  const gridOccupied = Array(4).fill(null).map(() => Array(6).fill(false));
 
   // ---------------- Box Palette ----------------
   const palette = document.createElement('div');
-  palette.className='palette';
+  palette.className = 'palette';
 
   const boxTypes = [
-    {label:'2×2', w:2, h:2},
-    {label:'2×1', w:2, h:1},
-    {label:'4×1', w:4, h:1},
-    {label:'6×1', w:6, h:1},
-    {label:'3×3', w:3, h:3},
-    {label:'4×4', w:4, h:4},
+    { label: '2×2', w: 2, h: 2 },
+    { label: '2×1', w: 2, h: 1 },
+    { label: '4×1', w: 4, h: 1 },
+    { label: '6×1', w: 6, h: 1 },
+    { label: '3×3', w: 3, h: 3 },
+    { label: '4×4', w: 4, h: 4 },
   ];
 
-  let selectedBox=null;
-  boxTypes.forEach(box=>{
-    const btn=document.createElement('button');
-    btn.textContent=box.label;
-    btn.onclick=()=>{selectedBox=box;};
+  let selectedBox = null;
+  boxTypes.forEach(box => {
+    const btn = document.createElement('button');
+    btn.textContent = box.label;
+    btn.onclick = () => { selectedBox = box; };
     palette.appendChild(btn);
   });
   container.appendChild(palette);
 
   // ---------------- Load Existing Boxes ----------------
-  const canvasRect=canvas.getBoundingClientRect();
-  const cellWidth=(canvasRect.width-10*5)/6;
-  const cellHeight=(canvasRect.height-10*3)/4;
+  const canvasRect = canvas.getBoundingClientRect();
+  const cellWidth = (canvasRect.width - 10 * 5) / 6;
+  const cellHeight = (canvasRect.height - 10 * 3) / 4;
 
-  if(view.boxes){
-    view.boxes.forEach(box=>{
-      const boxDiv=document.createElement('div');
-      boxDiv.className='box';
-      boxDiv.textContent=box.label;
-      boxDiv.style.width=`${cellWidth*box.w+(box.w-1)*10}px`;
-      boxDiv.style.height=`${cellHeight*box.h+(box.h-1)*10}px`;
-      boxDiv.style.left=`${box.col*(cellWidth+10)}px`;
-      boxDiv.style.top=`${box.row*(cellHeight+10)}px`;
+  if (view.boxes) {
+    view.boxes.forEach(box => {
+      const boxDiv = document.createElement('div');
+      boxDiv.className = 'box';
+      boxDiv.textContent = box.label;
+      boxDiv.style.width = `${cellWidth * box.w + (box.w - 1) * 10}px`;
+      boxDiv.style.height = `${cellHeight * box.h + (box.h - 1) * 10}px`;
+      boxDiv.style.left = `${box.col * (cellWidth + 10)}px`;
+      boxDiv.style.top = `${box.row * (cellHeight + 10)}px`;
       canvas.appendChild(boxDiv);
 
-      for(let r=box.row;r<box.row+box.h;r++){
-        for(let c=box.col;c<box.col+box.w;c++){
-          gridOccupied[r][c]=true;
+      for (let r = box.row; r < box.row + box.h; r++) {
+        for (let c = box.col; c < box.col + box.w; c++) {
+          gridOccupied[r][c] = true;
         }
       }
     });
   }
 
   // ---------------- Click to Place Boxes ----------------
-  canvas.addEventListener('click',(e)=>{
-    if(!selectedBox) return;
-    const index=gridCells.indexOf(e.target);
-    if(index===-1) return;
+  canvas.addEventListener('click', (e) => {
+    if (!selectedBox) return;
+    const index = gridCells.indexOf(e.target);
+    if (index === -1) return;
 
-    const col=index%6;
-    const row=Math.floor(index/6);
+    const col = index % 6;
+    const row = Math.floor(index / 6);
 
-    if(col+selectedBox.w>6 || row+selectedBox.h>4){
+    if (col + selectedBox.w > 6 || row + selectedBox.h > 4) {
       alert('Box too big for this position!');
       return;
     }
 
-    for(let r=row;r<row+selectedBox.h;r++){
-      for(let c=col;c<col+selectedBox.w;c++){
-        if(gridOccupied[r][c]){
+    for (let r = row; r < row + selectedBox.h; r++) {
+      for (let c = col; c < col + selectedBox.w; c++) {
+        if (gridOccupied[r][c]) {
           alert('Space already occupied!');
           return;
         }
       }
     }
 
-    const boxDiv=document.createElement('div');
-    boxDiv.className='box';
-    boxDiv.textContent=selectedBox.label;
-    boxDiv.style.width=`${cellWidth*selectedBox.w+(selectedBox.w-1)*10}px`;
-    boxDiv.style.height=`${cellHeight*selectedBox.h+(selectedBox.h-1)*10}px`;
-    boxDiv.style.left=`${col*(cellWidth+10)}px`;
-    boxDiv.style.top=`${row*(cellHeight+10)}px`;
+    const boxDiv = document.createElement('div');
+    boxDiv.className = 'box';
+    boxDiv.textContent = selectedBox.label;
+    boxDiv.style.width = `${cellWidth * selectedBox.w + (selectedBox.w - 1) * 10}px`;
+    boxDiv.style.height = `${cellHeight * selectedBox.h + (selectedBox.h - 1) * 10}px`;
+    boxDiv.style.left = `${col * (cellWidth + 10)}px`;
+    boxDiv.style.top = `${row * (cellHeight + 10)}px`;
     canvas.appendChild(boxDiv);
 
-    for(let r=row;r<row+selectedBox.h;r++){
-      for(let c=col;c<col+selectedBox.w;c++){
-        gridOccupied[r][c]=true;
+    for (let r = row; r < row + selectedBox.h; r++) {
+      for (let c = col; c < col + selectedBox.w; c++) {
+        gridOccupied[r][c] = true;
       }
     }
 
-    if(!view.boxes) view.boxes=[];
-    view.boxes.push({...selectedBox,col,row});
-    selectedBox=null;
+    if (!view.boxes) view.boxes = [];
+    view.boxes.push({ ...selectedBox, col, row });
+    selectedBox = null;
     saveViewsToLocal();
   });
 }
