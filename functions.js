@@ -88,26 +88,30 @@ function renderCanvas(view) {
   excelBtn.style.background = '#f97316'; // orange
   excelBtn.style.marginRight = '10px';
   excelBtn.onclick = () => {
-    const fileInput = document.createElement('input');
-    fileInput.type = 'file';
-    fileInput.accept = '.xlsx,.xls';
-    fileInput.style.display = 'none';
-    fileInput.onchange = () => {
-      const file = fileInput.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        view.excelBase64 = e.target.result;
-        view.updatedAt = Date.now();
-        saveViewsToLocal();
-        alert('Excel uploaded successfully!');
-      };
-      reader.readAsDataURL(file);
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.xlsx,.xls';
+  fileInput.style.display = 'none';
+  fileInput.onchange = () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      view.excelBase64 = e.target.result;
+      view.updatedAt = Date.now();
+      saveViewsToLocal();
+
+      // ✅ Update the button text immediately
+      excelBtn.textContent = 'Change Excel';
+
+      alert('Excel uploaded successfully!');
     };
-    document.body.appendChild(fileInput);
-    fileInput.click();
-    document.body.removeChild(fileInput);
+    reader.readAsDataURL(file);
   };
+  document.body.appendChild(fileInput);
+  fileInput.click();
+  document.body.removeChild(fileInput);
+};
 
   // Save & Back button
   const backBtn = document.createElement('button');
