@@ -82,32 +82,11 @@ function renderCanvas(view) {
   nameInput.style.fontSize = '20px';
   nameInput.style.width = '40%';
 
-  const backBtn = document.createElement('button');
-  backBtn.textContent = 'Save & Back';
-  backBtn.onclick = () => {
-    view.name = nameInput.value;
-    view.updatedAt = Date.now();
-
-    // Save or update view in views array
-    const existingIndex = views.findIndex(v => v.createdAt === view.createdAt);
-    if (existingIndex === -1) {
-      views.push(view);
-    } else {
-      views[existingIndex] = view;
-    }
-
-    saveViewsToLocal();
-    renderHome();
-  };
-
-  header.appendChild(nameInput);
-  header.appendChild(backBtn);
-  container.appendChild(header);
-
-  // ---------------- Excel Upload Button ----------------
+  // Excel Upload Button (orange)
   const excelBtn = document.createElement('button');
   excelBtn.textContent = view.excelBase64 ? 'Change Excel' : 'Upload Excel';
-  excelBtn.className = 'upload-btn';
+  excelBtn.style.background = '#f97316'; // orange
+  excelBtn.style.marginRight = '10px';
   excelBtn.onclick = () => {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
@@ -129,23 +108,52 @@ function renderCanvas(view) {
     fileInput.click();
     document.body.removeChild(fileInput);
   };
-  container.appendChild(excelBtn);
+
+  // Save & Back button
+  const backBtn = document.createElement('button');
+  backBtn.textContent = 'Save & Back';
+  backBtn.onclick = () => {
+    view.name = nameInput.value;
+    view.updatedAt = Date.now();
+
+    // Save or update view in views array
+    const existingIndex = views.findIndex(v => v.createdAt === view.createdAt);
+    if (existingIndex === -1) {
+      views.push(view);
+    } else {
+      views[existingIndex] = view;
+    }
+
+    saveViewsToLocal();
+    renderHome();
+  };
+
+  // Append header elements
+  header.appendChild(nameInput);
+  header.appendChild(excelBtn);
+  header.appendChild(backBtn);
+  container.appendChild(header);
 
   // ---------------- Canvas Grid ----------------
   const canvas = document.createElement('div');
   canvas.className = 'canvas';
   container.appendChild(canvas);
 
+  const gap = 10; // matches CSS grid-gap
+  const gridCols = 6;
+  const gridRows = 4;
+
+  // Create semi-transparent placeholder grid
   const gridCells = [];
-  for (let i = 0; i < 24; i++) {
+  for (let i = 0; i < gridCols * gridRows; i++) {
     const cell = document.createElement('div');
     cell.className = 'grid-cell';
     canvas.appendChild(cell);
     gridCells.push(cell);
   }
 
-  // ---------------- Grid Occupancy ----------------
-  const gridOccupied = Array(4).fill(null).map(() => Array(6).fill(false));
+  // Grid occupancy
+  const gridOccupied = Array(gridRows).fill(null).map(() => Array(gridCols).fill(false));
 
   // ---------------- Box Palette ----------------
   const palette = document.createElement('div');
@@ -171,18 +179,18 @@ function renderCanvas(view) {
 
   // ---------------- Load Existing Boxes ----------------
   const canvasRect = canvas.getBoundingClientRect();
-  const cellWidth = (canvasRect.width - 10 * 5) / 6;
-  const cellHeight = (canvasRect.height - 10 * 3) / 4;
+  const cellWidth = (canvasRect.width - gap * (gridCols - 1)) / gridCols;
+  const cellHeight = (canvasRect.height - gap * (gridRows - 1)) / gridRows;
 
   if (view.boxes) {
     view.boxes.forEach(box => {
       const boxDiv = document.createElement('div');
       boxDiv.className = 'box';
       boxDiv.textContent = box.label;
-      boxDiv.style.width = `${cellWidth * box.w + (box.w - 1) * 10}px`;
-      boxDiv.style.height = `${cellHeight * box.h + (box.h - 1) * 10}px`;
-      boxDiv.style.left = `${box.col * (cellWidth + 10)}px`;
-      boxDiv.style.top = `${box.row * (cellHeight + 10)}px`;
+      boxDiv.style.width = `${cellWidth * box.w + gap * (box.w - 1)}px`;
+      boxDiv.style.height = `${cellHeight * box.h + gap * (box.h - 1)}px`;
+      boxDiv.style.left = `${box.col * (cellWidth + gap)}px`;
+      boxDiv.style.top = `${box.row * (cellHeight + gap)}px`;
       canvas.appendChild(boxDiv);
 
       for (let r = box.row; r < box.row + box.h; r++) {
@@ -199,10 +207,10 @@ function renderCanvas(view) {
     const index = gridCells.indexOf(e.target);
     if (index === -1) return;
 
-    const col = index % 6;
-    const row = Math.floor(index / 6);
+    const col = index % gridCols;
+    const row = Math.floor(index / gridCols);
 
-    if (col + selectedBox.w > 6 || row + selectedBox.h > 4) {
+    if (col + selectedBox.w > gridCols || row + selectedBox.h > gridRows) {
       alert('Box too big for this position!');
       return;
     }
@@ -219,10 +227,10 @@ function renderCanvas(view) {
     const boxDiv = document.createElement('div');
     boxDiv.className = 'box';
     boxDiv.textContent = selectedBox.label;
-    boxDiv.style.width = `${cellWidth * selectedBox.w + (selectedBox.w - 1) * 10}px`;
-    boxDiv.style.height = `${cellHeight * selectedBox.h + (selectedBox.h - 1) * 10}px`;
-    boxDiv.style.left = `${col * (cellWidth + 10)}px`;
-    boxDiv.style.top = `${row * (cellHeight + 10)}px`;
+    boxDiv.style.width = `${cellWidth * selectedBox.w + gap * (selectedBox.w - 1)}px`;
+    boxDiv.style.height = `${cellHeight * selectedBox.h + gap * (selectedBox.h - 1)}px`;
+    boxDiv.style.left = `${col * (cellWidth + gap)}px`;
+    boxDiv.style.top = `${row * (cellHeight + gap)}px`;
     canvas.appendChild(boxDiv);
 
     for (let r = row; r < row + selectedBox.h; r++) {
