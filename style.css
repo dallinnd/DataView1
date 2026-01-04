@@ -1,0 +1,48 @@
+* {
+  box-sizing: border-box;
+  font-family: system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #f4f6f8;
+}
+
+.app-header {
+  background: #ffffff;
+  padding: 16px;
+  border-bottom: 1px solid #ddd;
+}
+
+main {
+  padding: 20px;
+}
+
+button {
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button.secondary {
+  background: #e5e7eb;
+  color: #111;
+}
+
+.view-list {
+  margin-top: 30px;
+  display: grid;
+  gap: 12px;
+}
+
+.view-card {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  cursor: pointer;
+}
