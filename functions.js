@@ -191,7 +191,7 @@ function renderCanvas(view) {
           return;
         }
 
-    const boxData={...selectedBox,col,row,title:'Title',text:'Box Variable'};
+    const boxData={...selectedBox,col,row,title:'Title',text:'Box Variable',bgColor:'#cce5ff',textColor:'#000',fontSize:16,variable:null};
     view.boxes.push(boxData);
     addBoxToCanvas(boxData,canvas,gridOccupied,cellWidth,cellHeight,view);
     selectedBox=null;
@@ -209,12 +209,17 @@ function addBoxToCanvas(boxData,canvas,gridOccupied,cellWidth,cellHeight,view){
   boxDiv.dataset.h=boxData.h;
   boxDiv.dataset.title=boxData.title;
   boxDiv.dataset.text=boxData.text;
+  boxDiv.dataset.bgColor=boxData.bgColor;
+  boxDiv.dataset.textColor=boxData.textColor;
+  boxDiv.dataset.fontSize=boxData.fontSize;
   boxDiv.style.position='absolute';
   boxDiv.style.left=boxData.col*(cellWidth+10)+'px';
   boxDiv.style.top=boxData.row*(cellHeight+10)+'px';
   boxDiv.style.width=cellWidth*boxData.w+(boxData.w-1)*10+'px';
   boxDiv.style.height=cellHeight*boxData.h+(boxData.h-1)*10+'px';
-  boxDiv.style.background='rgba(0,0,255,0.2)';
+  boxDiv.style.background=boxData.bgColor;
+  boxDiv.style.color=boxData.textColor;
+  boxDiv.style.fontSize=boxData.fontSize+'px';
   boxDiv.style.border='1px solid blue';
   boxDiv.style.display='flex';
   boxDiv.style.flexDirection='column';
@@ -231,40 +236,113 @@ function addBoxToCanvas(boxData,canvas,gridOccupied,cellWidth,cellHeight,view){
 
   boxDiv.addEventListener('click',(e)=>{
     e.stopPropagation();
-    openBoxActionPopup(boxDiv, view, gridOccupied, canvas);
+    openBoxEditor(boxDiv, view);
   });
 }
 
-// ----------------------- Box Popup -----------------------
-function openBoxActionPopup(boxDiv, view, gridOccupied, canvas){
+// ----------------------- Full Box Editor -----------------------
+function openBoxEditor(boxDiv, view){
   const overlay=document.createElement('div');
   overlay.className='popup-overlay';
+  overlay.style.display='flex';
+  overlay.style.justifyContent='center';
+  overlay.style.alignItems='center';
 
-  const popup=document.createElement('div');
-  popup.className='box-popup';
+  const editor=document.createElement('div');
+  editor.className='full-editor';
+  editor.style.width='90%';
+  editor.style.height='90%';
+  editor.style.background='white';
 
-  const deleteBtn=document.createElement('button'); deleteBtn.textContent='Delete'; deleteBtn.style.background='red'; deleteBtn.style.color='white';
-  deleteBtn.onclick=()=>{
-    canvas.removeChild(boxDiv);
-    for(let r=boxDiv.dataset.row;r<Number(boxDiv.dataset.row)+Number(boxDiv.dataset.h);r++)
-      for(let c=boxDiv.dataset.col;c<Number(boxDiv.dataset.col)+Number(boxDiv.dataset.w);c++)
-        gridOccupied[r][c]=false;
-    const idx=view.boxes.findIndex(b=>b.col==boxDiv.dataset.col&&b.row==boxDiv.dataset.row);
-    if(idx!==-1)view.boxes.splice(idx,1);
+  // Preview
+  const preview=document.createElement('div');
+  preview.className='preview';
+  preview.style.background=boxDiv.dataset.bgColor;
+  preview.style.color=boxDiv.dataset.textColor;
+  preview.style.fontSize=boxDiv.dataset.fontSize+'px';
+  preview.textContent=boxDiv.dataset.text;
+
+  // Edit panel
+  const editPanel=document.createElement('div');
+  editPanel.className='edit-panel';
+
+  // Background gradients
+  const gradients=[
+    '#cce5ff','#d4edda','#fff3cd','#f8d7da','#e2e3e5','#f5c6cb','#bee5eb','#d1ecf1','#f1f1f1','#e2f0cb','#fef0cb','#fde2e2'
+  ];
+  const gradTitle=document.createElement('p'); gradTitle.textContent='Background';
+  editPanel.appendChild(gradTitle);
+  gradients.forEach(g=>{
+    const btn=document.createElement('button');
+    btn.style.background=g;
+    btn.onclick=()=>{
+      preview.style.background=g;
+      boxDiv.dataset.bgColor=g;
+    };
+    editPanel.appendChild(btn);
+  });
+
+  // Text color
+  const textTitle=document.createElement('p'); textTitle.textContent='Text Color';
+  editPanel.appendChild(textTitle);
+  const textColors=['#000','#fff','#333','#666','#007bff','#28a745'];
+  textColors.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.style.background=c;
+    btn.onclick=()=>{
+      preview.style.color=c;
+      boxDiv.dataset.textColor=c;
+    };
+    editPanel.appendChild(btn);
+  });
+
+  // Font size
+  const fontTitle=document.createElement('p'); fontTitle.textContent='Font Size';
+  editPanel.appendChild(fontTitle);
+  const plusBtn=document.createElement('button'); plusBtn.textContent='+';
+  plusBtn.onclick=()=>{ boxDiv.dataset.fontSize=parseInt(boxDiv.dataset.fontSize)+2; preview.style.fontSize=boxDiv.dataset.fontSize+'px'; };
+  const minusBtn=document.createElement('button'); minusBtn.textContent='-';
+  minusBtn.onclick=()=>{ boxDiv.dataset.fontSize=parseInt(boxDiv.dataset.fontSize)-2; preview.style.fontSize=boxDiv.dataset.fontSize+'px'; };
+  editPanel.appendChild(plusBtn); editPanel.appendChild(minusBtn);
+
+  // Static/Variable
+  const toggleDiv=document.createElement('div'); toggleDiv.className='toggle-buttons';
+  const staticBtn=document.createElement('button'); staticBtn.textContent='Static';
+  const variableBtn=document.createElement('button'); variableBtn.textContent='Variable';
+  toggleDiv.appendChild(staticBtn); toggleDiv.appendChild(variableBtn);
+  editPanel.appendChild(toggleDiv);
+
+  // Static input
+  const staticInput=document.createElement('input'); staticInput.type='text'; staticInput.value=boxDiv.dataset.text;
+  staticInput.oninput=(e)=>{ preview.textContent=e.target.value; boxDiv.dataset.text=e.target.value; };
+  editPanel.appendChild(staticInput);
+
+  // Variable selection
+  const variableContainer=document.createElement('div'); variableContainer.className='variable-pills';
+  if(view.importedColumns){
+    view.importedColumns.forEach(col=>{
+      const pill=document.createElement('div');
+      pill.className='variable-pill';
+      pill.textContent=col;
+      pill.onclick=()=>{ preview.textContent=`<${col}>`; boxDiv.dataset.text=`<${col}>`; };
+      variableContainer.appendChild(pill);
+    });
+  }
+  editPanel.appendChild(variableContainer);
+
+  // Save button
+  const saveBtn=document.createElement('button');
+  saveBtn.textContent='Save';
+  saveBtn.style.marginTop='10px';
+  saveBtn.onclick=()=>{
+    document.body.removeChild(overlay);
     saveViewsToLocal();
-    document.body.removeChild(overlay);
   };
 
-  const editBtn=document.createElement('button'); editBtn.textContent='Edit'; editBtn.style.background='green'; editBtn.style.color='white';
-  editBtn.onclick=()=>{
-    document.body.removeChild(overlay);
-    alert('Full box editor placeholder'); // replace later with full editor popup
-  };
+  editPanel.appendChild(saveBtn);
 
-  const backBtn=document.createElement('button'); backBtn.textContent='Back'; backBtn.style.background='gray'; backBtn.style.color='white';
-  backBtn.onclick=()=>document.body.removeChild(overlay);
-
-  popup.appendChild(deleteBtn); popup.appendChild(editBtn); popup.appendChild(backBtn);
-  overlay.appendChild(popup);
+  editor.appendChild(preview);
+  editor.appendChild(editPanel);
+  overlay.appendChild(editor);
   document.body.appendChild(overlay);
-}
+    }
