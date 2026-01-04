@@ -1,126 +1,60 @@
 body {
-  font-family: sans-serif;
-  margin:0;
-  background:#f4f6f8;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
 }
 
-.app-header {
-  background:#fff;
-  padding:16px;
-  border-bottom:1px solid #ddd;
-}
-
-main {
-  padding:20px;
+#app {
+  padding: 20px;
 }
 
 button {
-  padding:12px 18px;
-  border-radius:10px;
-  border:none;
-  background:#2563eb;
-  color:white;
-  font-size:16px;
-  cursor:pointer;
-  margin:5px;
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 5px;
 }
 
-input {
-  padding:6px 10px;
-  border-radius:6px;
-  border:1px solid #ccc;
+button:hover {
+  opacity: 0.9;
 }
 
 .view-card {
-  background:#fff;
-  padding:10px;
-  margin-bottom:10px;
-  border-radius:10px;
-  box-shadow:0 2px 5px rgba(0,0,0,0.1);
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  margin-bottom: 5px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  border: 1px solid #ddd;
 }
 
-.canvas-header {
-  display:flex;
-  justify-content:space-between;
-  margin-bottom:16px;
-  align-items:center;
+.view-card button {
+  background: #3b82f6;
+  color: white;
 }
 
 .canvas {
   position: relative;
-  width: 100%;
-  aspect-ratio: 6 / 4; /* width : height = 6:4 */
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-template-rows: repeat(4, 1fr);
-  gap: 10px;
-  padding: 0;
-  margin: 0;
-  background: #f0f0f0;
-  border: 1px solid #ccc;
+  margin-top: 20px;
 }
 
 .grid-cell {
-  background: rgba(0, 0, 0, 0.05); /* semi-transparent guide */
-  width: 100%;
-  height: 100%;
-}
-
-.palette {
-  display:flex;
-  gap:10px;
-  margin-top:15px;
-  flex-wrap:wrap;
-}
-
-.palette button {
-  background:#10b981; /* green */
-  color:white;
+  border: 1px dashed rgba(0,0,0,0.1);
+  box-sizing: border-box;
 }
 
 .box {
-  position: absolute;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:8px;
-  color:white;
-  font-weight:bold;
-  background:#34d399;
-  cursor:pointer;
+  box-sizing: border-box;
 }
 
 .popup-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   z-index: 1000;
 }
 
-.box-popup {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.popup-buttons button {
-  margin: 5px;
-  padding: 10px 15px;
-  font-size: 18px;
-  border: none;
+.box-popup button {
   border-radius: 6px;
-  cursor: pointer;
-  color: white;
+  padding: 10px;
+  margin: 5px;
 }
