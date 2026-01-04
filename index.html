@@ -81,13 +81,11 @@
       const container = document.getElementById('app');
       container.innerHTML = '';
 
-      // Create New View button
       const createBtn = document.createElement('button');
       createBtn.textContent = 'Create New View';
       createBtn.onclick = () => renderCanvas();
       container.appendChild(createBtn);
 
-      // Existing Displays section
       const sectionTitle = document.createElement('h2');
       sectionTitle.textContent = 'View Existing Displays';
       container.appendChild(sectionTitle);
@@ -102,18 +100,15 @@
           const card = document.createElement('div');
           card.className = 'view-card';
 
-          // Name
           const name = document.createElement('strong');
           name.textContent = view.name;
 
-          // Box count
           const boxCount = document.createElement('span');
           boxCount.style.marginLeft = '10px';
           boxCount.style.color = '#666';
           const numBoxes = view.boxes ? view.boxes.length : 0;
           boxCount.textContent = `Boxes: ${numBoxes}`;
 
-          // Edit button
           const editBtn = document.createElement('button');
           editBtn.textContent = 'Edit';
           editBtn.style.marginLeft = '20px';
@@ -133,7 +128,6 @@
       const container = document.getElementById('app');
       container.innerHTML = '';
 
-      // If editing an existing view, use it; else create new
       const view = existingView || { 
         name: 'New View', 
         boxes: [], 
@@ -174,6 +168,9 @@
       }
 
       container.appendChild(canvas);
+
+      // ------------------- Grid Occupancy -------------------
+      const gridOccupied = Array(4).fill(null).map(() => Array(6).fill(false));
 
       // ------------------- Box Palette -------------------
       const palette = document.createElement('div');
@@ -219,6 +216,16 @@
           return;
         }
 
+        // Check occupancy
+        for (let r = row; r < row + selectedBox.h; r++) {
+          for (let c = col; c < col + selectedBox.w; c++) {
+            if (gridOccupied[r][c]) {
+              alert('Space already occupied!');
+              return;
+            }
+          }
+        }
+
         // Create box element
         const boxDiv = document.createElement('div');
         boxDiv.textContent = selectedBox.label;
@@ -234,7 +241,14 @@
 
         canvas.appendChild(boxDiv);
 
-        // Save box to view
+        // Mark cells occupied
+        for (let r = row; r < row + selectedBox.h; r++) {
+          for (let c = col; c < col + selectedBox.w; c++) {
+            gridOccupied[r][c] = true;
+          }
+        }
+
+        // Save box
         if (!view.boxes) view.boxes = [];
         view.boxes.push({ ...selectedBox, col, row });
 
