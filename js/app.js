@@ -4,11 +4,13 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js');
 }
 
-const app = document.getElementById('app');
+document.addEventListener('DOMContentLoaded', () => {
+  const app = document.getElementById('app');
 
-export function navigate(screen, data) {
-  app.innerHTML = '';
-  screen(app, data);
-}
+  window.navigate = function (screen, data) {
+    app.innerHTML = '';
+    screen(app, data);
+  };
 
-navigate(renderHome);
+  navigate(renderHome);
+});
