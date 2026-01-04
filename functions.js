@@ -1,4 +1,4 @@
-// ----------------------- In-Memory State -----------------------
+// ----------------------- State -----------------------
 const views = [];
 
 // ----------------------- LocalStorage -----------------------
@@ -22,7 +22,7 @@ function renderHome() {
 
   const createBtn = document.createElement('button');
   createBtn.textContent = 'Create New View';
-  createBtn.onclick = () => renderCanvas();
+  createBtn.onclick = () => renderUploadScreen();
   container.appendChild(createBtn);
 
   const sectionTitle = document.createElement('h2');
@@ -35,7 +35,7 @@ function renderHome() {
     empty.style.color = '#666';
     container.appendChild(empty);
   } else {
-    views.forEach((view) => {
+    views.forEach(view => {
       const card = document.createElement('div');
       card.className = 'view-card';
 
@@ -50,8 +50,7 @@ function renderHome() {
 
       const editBtn = document.createElement('button');
       editBtn.textContent = 'Edit';
-      editBtn.style.marginLeft = '20px';
-      editBtn.onclick = () => renderCanvas(view);
+      editBtn.onclick = () => renderUploadScreen(view);
 
       card.appendChild(name);
       card.appendChild(boxCount);
@@ -60,6 +59,51 @@ function renderHome() {
       container.appendChild(card);
     });
   }
+}
+
+// ----------------------- Upload Screen -----------------------
+function renderUploadScreen(existingView) {
+  const container = document.getElementById('app');
+  container.innerHTML = '';
+
+  const title = document.createElement('h2');
+  title.textContent = existingView ? 'Edit View: ' + existingView.name : 'New View: Upload Spreadsheet';
+  container.appendChild(title);
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.xlsx,.xls';
+  container.appendChild(fileInput);
+
+  const nextBtn = document.createElement('button');
+  nextBtn.textContent = 'Next';
+  nextBtn.onclick = () => {
+    if (!fileInput.files[0] && !existingView) {
+      alert('Please select an Excel file.');
+      return;
+    }
+
+    let view = existingView;
+    if (!existingView) {
+      view = { name: 'New View', boxes: [], excelBase64: '', createdAt: Date.now(), updatedAt: Date.now() };
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        view.excelBase64 = e.target.result;
+        saveViewsToLocal();
+        renderCanvas(view);
+      };
+      reader.readAsDataURL(fileInput.files[0]);
+    } else {
+      renderCanvas(view);
+    }
+  };
+
+  const backBtn = document.createElement('button');
+  backBtn.textContent = 'Back';
+  backBtn.onclick = renderHome;
+
+  container.appendChild(nextBtn);
+  container.appendChild(backBtn);
 }
 
 // ----------------------- Canvas Screen -----------------------
@@ -101,12 +145,13 @@ function renderCanvas(existingView) {
   const canvas = document.createElement('div');
   canvas.className = 'canvas';
 
+  const gridCells = [];
   for (let i=0; i<24; i++){
     const cell = document.createElement('div');
     cell.className = 'grid-cell';
     canvas.appendChild(cell);
+    gridCells.push(cell);
   }
-
   container.appendChild(canvas);
 
   // ------------------- Grid Occupancy -------------------
@@ -130,33 +175,50 @@ function renderCanvas(existingView) {
   boxTypes.forEach(box => {
     const btn = document.createElement('button');
     btn.textContent = box.label;
-    btn.onclick = () => {
-      selectedBox = box;
-    };
+    btn.onclick = () => { selectedBox = box; };
     palette.appendChild(btn);
   });
 
   container.appendChild(palette);
 
-  // ------------------- Click to place boxes -------------------
-  const gridCells = Array.from(canvas.children);
+  // ------------------- Load Existing Boxes -------------------
+  if (view.boxes) {
+    view.boxes.forEach(box => {
+      const boxDiv = document.createElement('div');
+      boxDiv.textContent = box.label;
+      boxDiv.style.background = '#34d399';
+      boxDiv.style.gridColumn = `${box.col + 1} / span ${box.w}`;
+      boxDiv.style.gridRow = `${box.row + 1} / span ${box.h}`;
+      boxDiv.style.display = 'flex';
+      boxDiv.style.alignItems = 'center';
+      boxDiv.style.justifyContent = 'center';
+      boxDiv.style.borderRadius = '8px';
+      boxDiv.style.color = 'white';
+      boxDiv.style.fontWeight = 'bold';
+      canvas.appendChild(boxDiv);
 
+      for (let r = box.row; r < box.row + box.h; r++) {
+        for (let c = box.col; c < box.col + box.w; c++) {
+          gridOccupied[r][c] = true;
+        }
+      }
+    });
+  }
+
+  // ------------------- Click to place boxes -------------------
   canvas.addEventListener('click', (e) => {
     if (!selectedBox) return;
-
     const index = gridCells.indexOf(e.target);
     if (index === -1) return;
 
     const col = index % 6;
     const row = Math.floor(index / 6);
 
-    // Check bounds
     if (col + selectedBox.w > 6 || row + selectedBox.h > 4) {
       alert('Box too big for this position!');
       return;
     }
 
-    // Check occupancy
     for (let r = row; r < row + selectedBox.h; r++) {
       for (let c = col; c < col + selectedBox.w; c++) {
         if (gridOccupied[r][c]) {
@@ -166,7 +228,6 @@ function renderCanvas(existingView) {
       }
     }
 
-    // Create box element
     const boxDiv = document.createElement('div');
     boxDiv.textContent = selectedBox.label;
     boxDiv.style.background = '#34d399';
@@ -178,20 +239,17 @@ function renderCanvas(existingView) {
     boxDiv.style.borderRadius = '8px';
     boxDiv.style.color = 'white';
     boxDiv.style.fontWeight = 'bold';
-
     canvas.appendChild(boxDiv);
 
-    // Mark occupied
     for (let r = row; r < row + selectedBox.h; r++) {
       for (let c = col; c < col + selectedBox.w; c++) {
         gridOccupied[r][c] = true;
       }
     }
 
-    // Save box
     if (!view.boxes) view.boxes = [];
     view.boxes.push({ ...selectedBox, col, row });
-
-    selectedBox = null; // reset
+    selectedBox = null;
+    saveViewsToLocal();
   });
-}
+                       }
