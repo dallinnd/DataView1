@@ -37,6 +37,9 @@ input {
   margin-bottom:10px;
   border-radius:10px;
   box-shadow:0 2px 5px rgba(0,0,0,0.1);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
 }
 
 .canvas-header {
@@ -47,6 +50,7 @@ input {
 }
 
 .canvas {
+  position: relative; /* container for absolute boxes */
   width:90vw;
   max-width:960px;
   aspect-ratio:16 / 9;
@@ -77,4 +81,17 @@ input {
 
 .palette button {
   background:#10b981; /* green */
+  color:white;
+}
+
+.box {
+  position: absolute;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:8px;
+  color:white;
+  font-weight:bold;
+  background:#34d399;
+  cursor:pointer;
 }
