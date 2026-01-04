@@ -292,56 +292,139 @@ function openBoxPopup(boxDiv, view, gridOccupied, canvas) {
   popup.style.background = 'white';
   popup.style.padding = '20px';
   popup.style.borderRadius = '12px';
+  popup.style.width = '400px';
   popup.style.display = 'flex';
-  popup.style.flexDirection = 'row';
-  popup.style.justifyContent = 'center';
+  popup.style.flexDirection = 'column';
+  popup.style.alignItems = 'stretch';
 
-  // Buttons
-  const buttons = document.createElement('div');
-  buttons.className = 'popup-buttons';
-  ['🗑','✏️','↩'].forEach(icon => {
-    const btn = document.createElement('button');
-    btn.textContent = icon;
-    btn.style.fontSize = '20px';
-    btn.style.margin = '5px';
-    btn.style.padding = '10px';
-    btn.style.border = 'none';
-    btn.style.borderRadius = '6px';
-    btn.style.color = 'white';
-    if(icon==='🗑') btn.style.background='red';
-    if(icon==='✏️') btn.style.background='green';
-    if(icon==='↩') btn.style.background='blue';
-    buttons.appendChild(btn);
+  // ---------------- Buttons Row ----------------
+  const buttonsRow = document.createElement('div');
+  buttonsRow.style.display = 'flex';
+  buttonsRow.style.justifyContent = 'space-between';
+  buttonsRow.style.marginBottom = '15px';
 
-    if(icon==='🗑') btn.onclick = () => {
-      // Remove box
-      canvas.removeChild(boxDiv);
+  const trashBtn = document.createElement('button');
+  trashBtn.textContent = '🗑';
+  trashBtn.style.background = 'red';
+  trashBtn.style.color = 'white';
+  trashBtn.onclick = () => {
+    // Remove box
+    canvas.removeChild(boxDiv);
 
-      // Free occupied
-      for (let r = boxDiv.dataset.row; r < Number(boxDiv.dataset.row)+Number(boxDiv.dataset.h); r++) {
-        for (let c = boxDiv.dataset.col; c < Number(boxDiv.dataset.col)+Number(boxDiv.dataset.w); c++) {
-          gridOccupied[r][c]=false;
-        }
+    // Free occupied
+    for (let r = boxDiv.dataset.row; r < Number(boxDiv.dataset.row)+Number(boxDiv.dataset.h); r++) {
+      for (let c = boxDiv.dataset.col; c < Number(boxDiv.dataset.col)+Number(boxDiv.dataset.w); c++) {
+        gridOccupied[r][c]=false;
       }
+    }
 
-      // Remove from view.boxes
-      const idx = view.boxes.findIndex(b => b.col==boxDiv.dataset.col && b.row==boxDiv.dataset.row);
-      if(idx!==-1) view.boxes.splice(idx,1);
-      saveViewsToLocal();
-      document.body.removeChild(overlay);
-    };
+    // Remove from view.boxes
+    const idx = view.boxes.findIndex(b => b.col==boxDiv.dataset.col && b.row==boxDiv.dataset.row);
+    if(idx!==-1) view.boxes.splice(idx,1);
+    saveViewsToLocal();
+    document.body.removeChild(overlay);
+  };
 
-    if(icon==='✏️') btn.onclick = () => {
-      document.body.removeChild(overlay);
-      alert('Open box editing preview (to be implemented)');
-    };
+  const editBtn = document.createElement('button');
+  editBtn.textContent = '✏️ Edit';
+  editBtn.style.background = 'green';
+  editBtn.style.color = 'white';
+  editBtn.onclick = () => {
+    openBoxEditPreview(boxDiv, view);
+    document.body.removeChild(overlay);
+  };
 
-    if(icon==='↩') btn.onclick = () => {
-      document.body.removeChild(overlay);
-    };
-  });
+  const backBtn = document.createElement('button');
+  backBtn.textContent = '↩ Back';
+  backBtn.style.background = 'blue';
+  backBtn.style.color = 'white';
+  backBtn.onclick = () => document.body.removeChild(overlay);
 
-  popup.appendChild(buttons);
+  buttonsRow.appendChild(trashBtn);
+  buttonsRow.appendChild(editBtn);
+  buttonsRow.appendChild(backBtn);
+  popup.appendChild(buttonsRow);
+
+  // ---------------- Box Info Preview ----------------
+  const infoDiv = document.createElement('div');
+  infoDiv.style.display = 'flex';
+  infoDiv.style.flexDirection = 'column';
+  infoDiv.style.alignItems = 'stretch';
+  infoDiv.style.gap = '10px';
+
+  // Title input
+  const titleInput = document.createElement('input');
+  titleInput.value = boxDiv.dataset.title || 'Title';
+  titleInput.placeholder = 'Title';
+  infoDiv.appendChild(titleInput);
+
+  // Main text input
+  const textInput = document.createElement('input');
+  textInput.value = boxDiv.dataset.text || 'Box Variable';
+  textInput.placeholder = 'Main Text / Variable';
+  infoDiv.appendChild(textInput);
+
+  // Color pickers
+  const bgColorInput = document.createElement('input');
+  bgColorInput.type = 'color';
+  bgColorInput.value = boxDiv.style.background || '#aaddff';
+  const textColorInput = document.createElement('input');
+  textColorInput.type = 'color';
+  textColorInput.value = boxDiv.style.color || '#000000';
+
+  const bgLabel = document.createElement('label');
+  bgLabel.textContent = 'Background: ';
+  bgLabel.appendChild(bgColorInput);
+
+  const textLabel = document.createElement('label');
+  textLabel.textContent = 'Text: ';
+  textLabel.appendChild(textColorInput);
+
+  infoDiv.appendChild(bgLabel);
+  infoDiv.appendChild(textLabel);
+
+  // Font size input
+  const fontSizeInput = document.createElement('input');
+  fontSizeInput.type = 'number';
+  fontSizeInput.min = 8;
+  fontSizeInput.max = 100;
+  fontSizeInput.value = parseInt(boxDiv.style.fontSize) || 16;
+  const fontLabel = document.createElement('label');
+  fontLabel.textContent = 'Font Size: ';
+  fontLabel.appendChild(fontSizeInput);
+  infoDiv.appendChild(fontLabel);
+
+  popup.appendChild(infoDiv);
+
+  // ---------------- Save Button ----------------
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Save Box';
+  saveBtn.style.background = 'green';
+  saveBtn.style.color = 'white';
+  saveBtn.style.marginTop = '15px';
+  saveBtn.onclick = () => {
+    // Update boxDiv and data
+    boxDiv.dataset.title = titleInput.value;
+    boxDiv.dataset.text = textInput.value;
+    boxDiv.style.background = bgColorInput.value;
+    boxDiv.style.color = textColorInput.value;
+    boxDiv.style.fontSize = fontSizeInput.value + 'px';
+    boxDiv.textContent = textInput.value;
+
+    const boxData = view.boxes.find(b => b.col==boxDiv.dataset.col && b.row==boxDiv.dataset.row);
+    if(boxData){
+      boxData.title = titleInput.value;
+      boxData.text = textInput.value;
+      boxData.bgColor = bgColorInput.value;
+      boxData.textColor = textColorInput.value;
+      boxData.fontSize = fontSizeInput.value;
+    }
+
+    saveViewsToLocal();
+    document.body.removeChild(overlay);
+  };
+
+  popup.appendChild(saveBtn);
   overlay.appendChild(popup);
   document.body.appendChild(overlay);
 }
