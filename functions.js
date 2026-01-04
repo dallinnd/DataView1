@@ -101,7 +101,7 @@ function renderCanvas(view) {
       reader.onload = (e) => {
         view.excelBase64 = e.target.result;
         view.updatedAt = Date.now();
-        view.importedColumns = ['Column1','Column2','Column3']; // placeholder
+        view.importedColumns = ['Column1','Column2','Column3']; // placeholder for imported columns
         saveViewsToLocal();
         excelBtn.textContent = 'Change Excel';
         alert('Excel uploaded successfully!');
@@ -132,7 +132,7 @@ function renderCanvas(view) {
   header.appendChild(backBtn);
   container.appendChild(header);
 
-  // Canvas grid
+  // Canvas
   const canvas = document.createElement('div');
   canvas.className = 'canvas';
   container.appendChild(canvas);
@@ -146,7 +146,6 @@ function renderCanvas(view) {
   for(let i=0;i<gridCols*gridRows;i++){
     const cell = document.createElement('div');
     cell.className='grid-cell';
-    cell.style.background='rgba(0,0,0,0.05)';
     canvas.appendChild(cell);
   }
 
@@ -166,10 +165,106 @@ function renderCanvas(view) {
   });
   container.appendChild(palette);
 
-  // Placeholder for adding boxes (simple logic)
+  // Dimensions for absolute positioning
+  const cellWidth = canvas.clientWidth/gridCols - gap + 1;
+  const cellHeight = canvas.clientHeight/gridRows - gap + 1;
+
+  // Load existing boxes
+  if(view.boxes) view.boxes.forEach(box=>addBoxToCanvas(box, canvas, gridOccupied, cellWidth, cellHeight, view));
+
+  // Canvas click to add box
   canvas.addEventListener('click', (e)=>{
     if(!selectedBox) return;
-    alert('Box selected: ' + selectedBox.label + '. Box placement logic goes here.');
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const col = Math.floor(x/(cellWidth+gap));
+    const row = Math.floor(y/(cellHeight+gap));
+    if(col+selectedBox.w>gridCols || row+selectedBox.h>gridRows){
+      alert('Box too big!');
+      return;
+    }
+    for(let r=row;r<row+selectedBox.h;r++)
+      for(let c=col;c<col+selectedBox.w;c++)
+        if(gridOccupied[r][c]){
+          alert('Space occupied!');
+          return;
+        }
+
+    const boxData={...selectedBox,col,row,title:'Title',text:'Box Variable'};
+    view.boxes.push(boxData);
+    addBoxToCanvas(boxData,canvas,gridOccupied,cellWidth,cellHeight,view);
     selectedBox=null;
+    saveViewsToLocal();
   });
+}
+
+// ----------------------- Add box helper -----------------------
+function addBoxToCanvas(boxData,canvas,gridOccupied,cellWidth,cellHeight,view){
+  const boxDiv=document.createElement('div');
+  boxDiv.className='box';
+  boxDiv.dataset.col=boxData.col;
+  boxDiv.dataset.row=boxData.row;
+  boxDiv.dataset.w=boxData.w;
+  boxDiv.dataset.h=boxData.h;
+  boxDiv.dataset.title=boxData.title;
+  boxDiv.dataset.text=boxData.text;
+  boxDiv.style.position='absolute';
+  boxDiv.style.left=boxData.col*(cellWidth+10)+'px';
+  boxDiv.style.top=boxData.row*(cellHeight+10)+'px';
+  boxDiv.style.width=cellWidth*boxData.w+(boxData.w-1)*10+'px';
+  boxDiv.style.height=cellHeight*boxData.h+(boxData.h-1)*10+'px';
+  boxDiv.style.background='rgba(0,0,255,0.2)';
+  boxDiv.style.border='1px solid blue';
+  boxDiv.style.display='flex';
+  boxDiv.style.flexDirection='column';
+  boxDiv.style.justifyContent='center';
+  boxDiv.style.alignItems='center';
+  boxDiv.style.cursor='pointer';
+  boxDiv.textContent=boxData.text;
+
+  for(let r=boxData.row;r<boxData.row+boxData.h;r++)
+    for(let c=boxData.col;c<boxData.col+boxData.w;c++)
+      gridOccupied[r][c]=true;
+
+  canvas.appendChild(boxDiv);
+
+  boxDiv.addEventListener('click',(e)=>{
+    e.stopPropagation();
+    openBoxActionPopup(boxDiv, view, gridOccupied, canvas);
+  });
+}
+
+// ----------------------- Box Popup -----------------------
+function openBoxActionPopup(boxDiv, view, gridOccupied, canvas){
+  const overlay=document.createElement('div');
+  overlay.className='popup-overlay';
+
+  const popup=document.createElement('div');
+  popup.className='box-popup';
+
+  const deleteBtn=document.createElement('button'); deleteBtn.textContent='Delete'; deleteBtn.style.background='red'; deleteBtn.style.color='white';
+  deleteBtn.onclick=()=>{
+    canvas.removeChild(boxDiv);
+    for(let r=boxDiv.dataset.row;r<Number(boxDiv.dataset.row)+Number(boxDiv.dataset.h);r++)
+      for(let c=boxDiv.dataset.col;c<Number(boxDiv.dataset.col)+Number(boxDiv.dataset.w);c++)
+        gridOccupied[r][c]=false;
+    const idx=view.boxes.findIndex(b=>b.col==boxDiv.dataset.col&&b.row==boxDiv.dataset.row);
+    if(idx!==-1)view.boxes.splice(idx,1);
+    saveViewsToLocal();
+    document.body.removeChild(overlay);
+  };
+
+  const editBtn=document.createElement('button'); editBtn.textContent='Edit'; editBtn.style.background='green'; editBtn.style.color='white';
+  editBtn.onclick=()=>{
+    document.body.removeChild(overlay);
+    alert('Full box editor placeholder'); // replace later with full editor popup
+  };
+
+  const backBtn=document.createElement('button'); backBtn.textContent='Back'; backBtn.style.background='gray'; backBtn.style.color='white';
+  backBtn.onclick=()=>document.body.removeChild(overlay);
+
+  popup.appendChild(deleteBtn); popup.appendChild(editBtn); popup.appendChild(backBtn);
+  overlay.appendChild(popup);
+  document.body.appendChild(overlay);
 }
