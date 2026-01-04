@@ -1,8 +1,10 @@
-import { openDB } from '../libs/idb.min.js';
+const { openDB } = window.idb;
 
 export const dbPromise = openDB('data-view-db', 1, {
   upgrade(db) {
-    db.createObjectStore('views', { keyPath: 'id' });
+    if (!db.objectStoreNames.contains('views')) {
+      db.createObjectStore('views', { keyPath: 'id' });
+    }
   }
 });
 
