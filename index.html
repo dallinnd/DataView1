@@ -8,8 +8,50 @@
     body { font-family: sans-serif; margin:0; background:#f4f6f8; }
     .app-header { background:#fff; padding:16px; border-bottom:1px solid #ddd; }
     main { padding:20px; }
-    button { padding:12px 18px; border-radius:10px; border:none; background:#2563eb; color:white; font-size:16px; cursor:pointer; margin-bottom:20px; }
-    .view-list h2 { margin-top:30px; }
+
+    button {
+      padding:12px 18px;
+      border-radius:10px;
+      border:none;
+      background:#2563eb;
+      color:white;
+      font-size:16px;
+      cursor:pointer;
+      margin-bottom:20px;
+    }
+
+    input {
+      padding:6px 10px;
+      border-radius:6px;
+      border:1px solid #ccc;
+    }
+
+    .view-card {
+      background:#fff;
+      padding:10px;
+      margin-bottom:10px;
+      border-radius:10px;
+      box-shadow:0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .canvas-header { display:flex; justify-content:space-between; margin-bottom:16px; }
+    .canvas {
+      width:90vw;
+      max-width:960px;
+      aspect-ratio:16/9;
+      background:white;
+      border-radius:16px;
+      padding:10px;
+      display:grid;
+      grid-template-columns:repeat(6,1fr);
+      grid-template-rows:repeat(4,1fr);
+      gap:10px;
+    }
+
+    .grid-cell {
+      border:1px dashed #d1d5db;
+      border-radius:8px;
+    }
   </style>
 </head>
 <body>
@@ -19,153 +61,111 @@
   <main id="app"></main>
 
   <script>
-    // ----------------------- State -----------------------
-    const views = []; // temporary in-memory storage
+    // ----------------------- In-Memory State -----------------------
+    const views = [];
 
-    // ----------------------- Screens -----------------------
+    // ----------------------- Home Screen -----------------------
     function renderHome() {
-  const container = document.getElementById('app');
-  container.innerHTML = '';
+      const container = document.getElementById('app');
+      container.innerHTML = '';
 
-  const createBtn = document.createElement('button');
-  createBtn.textContent = 'Create New View';
-  createBtn.onclick = () => renderCanvas();
+      // Create New View button
+      const createBtn = document.createElement('button');
+      createBtn.textContent = 'Create New View';
+      createBtn.onclick = () => renderCanvas();
 
-  container.appendChild(createBtn);
+      container.appendChild(createBtn);
 
-  const sectionTitle = document.createElement('h2');
-  sectionTitle.textContent = 'View Existing Displays';
-  container.appendChild(sectionTitle);
+      // Existing Displays section
+      const sectionTitle = document.createElement('h2');
+      sectionTitle.textContent = 'View Existing Displays';
+      container.appendChild(sectionTitle);
 
-  if (views.length === 0) {
-    const empty = document.createElement('p');
-    empty.textContent = 'No displays yet. Create one to get started.';
-    empty.style.color = '#666';
-    container.appendChild(empty);
-  } else {
-    views.forEach((view, index) => {
-      const card = document.createElement('div');
-      card.style.background = '#fff';
-      card.style.padding = '10px';
-      card.style.marginBottom = '10px';
-      card.style.borderRadius = '10px';
-      card.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
+      if (views.length === 0) {
+        const empty = document.createElement('p');
+        empty.textContent = 'No displays yet. Create one to get started.';
+        empty.style.color = '#666';
+        container.appendChild(empty);
+      } else {
+        views.forEach((view) => {
+          const card = document.createElement('div');
+          card.className = 'view-card';
 
-      // Show name
-      const name = document.createElement('strong');
-      name.textContent = view.name;
+          // Name
+          const name = document.createElement('strong');
+          name.textContent = view.name;
 
-      // Show number of boxes
-      const boxCount = document.createElement('span');
-      boxCount.style.marginLeft = '10px';
-      boxCount.style.color = '#666';
-      const numBoxes = view.boxes ? view.boxes.length : 0;
-      boxCount.textContent = `Boxes: ${numBoxes}`;
+          // Box count
+          const boxCount = document.createElement('span');
+          boxCount.style.marginLeft = '10px';
+          boxCount.style.color = '#666';
+          const numBoxes = view.boxes ? view.boxes.length : 0;
+          boxCount.textContent = `Boxes: ${numBoxes}`;
 
-      // Edit button
-      const editBtn = document.createElement('button');
-      editBtn.textContent = 'Edit';
-      editBtn.style.marginLeft = '20px';
-      editBtn.onclick = () => renderCanvas(view);
+          // Edit button
+          const editBtn = document.createElement('button');
+          editBtn.textContent = 'Edit';
+          editBtn.style.marginLeft = '20px';
+          editBtn.onclick = () => renderCanvas(view);
 
-      card.appendChild(name);
-      card.appendChild(boxCount);
-      card.appendChild(editBtn);
+          card.appendChild(name);
+          card.appendChild(boxCount);
+          card.appendChild(editBtn);
 
-      container.appendChild(card);
-    });
-  }
+          container.appendChild(card);
+        });
+      }
     }
 
+    // ----------------------- Canvas Screen -----------------------
     function renderCanvas(existingView) {
-  const container = document.getElementById('app');
-  container.innerHTML = '';
+      const container = document.getElementById('app');
+      container.innerHTML = '';
 
-  // If existing view passed in, use it; otherwise create new
-  const view = existingView || { 
-    name: 'New View', 
-    boxes: [], 
-    createdAt: Date.now(), 
-    updatedAt: Date.now() 
-  };
+      // If editing an existing view, use it; else create new
+      const view = existingView || { 
+        name: 'New View', 
+        boxes: [], 
+        createdAt: Date.now(), 
+        updatedAt: Date.now() 
+      };
 
-  // Header
-  const header = document.createElement('div');
-  header.style.display='flex'; 
-  header.style.justifyContent='space-between'; 
-  header.style.marginBottom='16px';
+      // Header
+      const header = document.createElement('div');
+      header.className = 'canvas-header';
 
-  const nameInput = document.createElement('input');
-  nameInput.value = view.name;
-  nameInput.style.fontSize='20px';
-  nameInput.style.padding='8px';
-  nameInput.style.width='60%';
+      const nameInput = document.createElement('input');
+      nameInput.value = view.name;
+      nameInput.style.fontSize='20px';
+      nameInput.style.width='60%';
 
-  const backBtn = document.createElement('button');
-  backBtn.textContent = 'Save & Back';
-  backBtn.onclick = () => {
-    view.name = nameInput.value;
-    view.updatedAt = Date.now();
-    // Save view to in-memory array if new
-    if (!existingView) views.push(view);
-    renderHome();
-  };
-
-  header.appendChild(nameInput);
-  header.appendChild(backBtn);
-  container.appendChild(header);
-
-  // Canvas
-  const canvas = document.createElement('div');
-  canvas.style.width='90vw';
-  canvas.style.maxWidth='960px';
-  canvas.style.aspectRatio='16/9';
-  canvas.style.background='white';
-  canvas.style.borderRadius='16px';
-  canvas.style.padding='10px';
-  canvas.style.display='grid';
-  canvas.style.gridTemplateColumns='repeat(6,1fr)';
-  canvas.style.gridTemplateRows='repeat(4,1fr)';
-  canvas.style.gap='10px';
-
-  for (let i=0;i<24;i++){
-    const cell = document.createElement('div');
-    cell.style.border='1px dashed #d1d5db';
-    cell.style.borderRadius='8px';
-    canvas.appendChild(cell);
-  }
-
-  container.appendChild(canvas);
-}
+      const backBtn = document.createElement('button');
+      backBtn.textContent = 'Save & Back';
+      backBtn.onclick = () => {
+        view.name = nameInput.value;
+        view.updatedAt = Date.now();
+        if (!existingView) views.push(view);
+        renderHome();
+      };
 
       header.appendChild(nameInput);
       header.appendChild(backBtn);
       container.appendChild(header);
 
-      // Canvas
+      // Canvas grid
       const canvas = document.createElement('div');
-      canvas.style.width='90vw';
-      canvas.style.maxWidth='960px';
-      canvas.style.aspectRatio='16/9';
-      canvas.style.background='white';
-      canvas.style.borderRadius='16px';
-      canvas.style.padding='10px';
-      canvas.style.display='grid';
-      canvas.style.gridTemplateColumns='repeat(6,1fr)';
-      canvas.style.gridTemplateRows='repeat(4,1fr)';
-      canvas.style.gap='10px';
+      canvas.className = 'canvas';
 
-      for (let i=0;i<24;i++){
+      for (let i=0; i<24; i++){
         const cell = document.createElement('div');
-        cell.style.border='1px dashed #d1d5db';
-        cell.style.borderRadius='8px';
+        cell.className = 'grid-cell';
         canvas.appendChild(cell);
       }
 
       container.appendChild(canvas);
     }
 
-    // ----------------------- Init -----------------------
+    // ----------------------- Initialize -----------------------
     document.addEventListener('DOMContentLoaded', renderHome);
   </script>
 </body>
