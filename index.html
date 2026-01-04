@@ -4,18 +4,103 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Data View</title>
-
-  <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: sans-serif; margin:0; background:#f4f6f8; }
+    .app-header { background:#fff; padding:16px; border-bottom:1px solid #ddd; }
+    main { padding:20px; }
+    button { padding:12px 18px; border-radius:10px; border:none; background:#2563eb; color:white; font-size:16px; cursor:pointer; margin-bottom:20px; }
+    .view-list h2 { margin-top:30px; }
+  </style>
 </head>
 <body>
-
   <header class="app-header">
     <h1>Data View</h1>
   </header>
-
   <main id="app"></main>
 
-  <script type="module" src="./js/app.js"></script>
+  <script>
+    // ----------------------- State -----------------------
+    const views = []; // temporary in-memory storage
 
+    // ----------------------- Screens -----------------------
+    function renderHome() {
+      const container = document.getElementById('app');
+      container.innerHTML = '';
+
+      const createBtn = document.createElement('button');
+      createBtn.textContent = 'Create New View';
+      createBtn.onclick = () => renderCanvas();
+
+      container.appendChild(createBtn);
+
+      const sectionTitle = document.createElement('h2');
+      sectionTitle.textContent = 'View Existing Displays';
+      container.appendChild(sectionTitle);
+
+      const empty = document.createElement('p');
+      empty.textContent = views.length ? '' : 'No displays yet. Create one to get started.';
+      container.appendChild(empty);
+
+      if (views.length) {
+        views.forEach(view => {
+          const card = document.createElement('div');
+          card.textContent = view.name;
+          container.appendChild(card);
+        });
+      }
+    }
+
+    function renderCanvas() {
+      const container = document.getElementById('app');
+      container.innerHTML = '';
+
+      const header = document.createElement('div');
+      header.style.display='flex'; 
+      header.style.justifyContent='space-between'; 
+      header.style.marginBottom='16px';
+
+      const nameInput = document.createElement('input');
+      nameInput.value = 'New View';
+      nameInput.style.fontSize='20px';
+      nameInput.style.padding='8px';
+      nameInput.style.width='60%';
+
+      const backBtn = document.createElement('button');
+      backBtn.textContent = 'Save & Back';
+      backBtn.onclick = () => {
+        views.push({ name: nameInput.value });
+        renderHome();
+      };
+
+      header.appendChild(nameInput);
+      header.appendChild(backBtn);
+      container.appendChild(header);
+
+      // Canvas
+      const canvas = document.createElement('div');
+      canvas.style.width='90vw';
+      canvas.style.maxWidth='960px';
+      canvas.style.aspectRatio='16/9';
+      canvas.style.background='white';
+      canvas.style.borderRadius='16px';
+      canvas.style.padding='10px';
+      canvas.style.display='grid';
+      canvas.style.gridTemplateColumns='repeat(6,1fr)';
+      canvas.style.gridTemplateRows='repeat(4,1fr)';
+      canvas.style.gap='10px';
+
+      for (let i=0;i<24;i++){
+        const cell = document.createElement('div');
+        cell.style.border='1px dashed #d1d5db';
+        cell.style.borderRadius='8px';
+        canvas.appendChild(cell);
+      }
+
+      container.appendChild(canvas);
+    }
+
+    // ----------------------- Init -----------------------
+    document.addEventListener('DOMContentLoaded', renderHome);
+  </script>
 </body>
 </html>
