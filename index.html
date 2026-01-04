@@ -24,30 +24,57 @@
 
     // ----------------------- Screens -----------------------
     function renderHome() {
-      const container = document.getElementById('app');
-      container.innerHTML = '';
+  const container = document.getElementById('app');
+  container.innerHTML = '';
 
-      const createBtn = document.createElement('button');
-      createBtn.textContent = 'Create New View';
-      createBtn.onclick = () => renderCanvas();
+  const createBtn = document.createElement('button');
+  createBtn.textContent = 'Create New View';
+  createBtn.onclick = () => renderCanvas();
 
-      container.appendChild(createBtn);
+  container.appendChild(createBtn);
 
-      const sectionTitle = document.createElement('h2');
-      sectionTitle.textContent = 'View Existing Displays';
-      container.appendChild(sectionTitle);
+  const sectionTitle = document.createElement('h2');
+  sectionTitle.textContent = 'View Existing Displays';
+  container.appendChild(sectionTitle);
 
-      const empty = document.createElement('p');
-      empty.textContent = views.length ? '' : 'No displays yet. Create one to get started.';
-      container.appendChild(empty);
+  if (views.length === 0) {
+    const empty = document.createElement('p');
+    empty.textContent = 'No displays yet. Create one to get started.';
+    empty.style.color = '#666';
+    container.appendChild(empty);
+  } else {
+    views.forEach((view, index) => {
+      const card = document.createElement('div');
+      card.style.background = '#fff';
+      card.style.padding = '10px';
+      card.style.marginBottom = '10px';
+      card.style.borderRadius = '10px';
+      card.style.boxShadow = '0 2px 5px rgba(0,0,0,0.1)';
 
-      if (views.length) {
-        views.forEach(view => {
-          const card = document.createElement('div');
-          card.textContent = view.name;
-          container.appendChild(card);
-        });
-      }
+      // Show name
+      const name = document.createElement('strong');
+      name.textContent = view.name;
+
+      // Show number of boxes
+      const boxCount = document.createElement('span');
+      boxCount.style.marginLeft = '10px';
+      boxCount.style.color = '#666';
+      const numBoxes = view.boxes ? view.boxes.length : 0;
+      boxCount.textContent = `Boxes: ${numBoxes}`;
+
+      // Edit button
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.style.marginLeft = '20px';
+      editBtn.onclick = () => renderCanvas(view);
+
+      card.appendChild(name);
+      card.appendChild(boxCount);
+      card.appendChild(editBtn);
+
+      container.appendChild(card);
+    });
+  }
     }
 
     function renderCanvas() {
