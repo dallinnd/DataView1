@@ -78,3 +78,52 @@ button { cursor: pointer; border: none; border-radius: 12px; font-weight: 600; t
 /* Detail Modal */
 .detail-modal { background: white; width: 85%; max-height: 85%; border-radius: 24px; display: flex; flex-direction: column; padding: 30px; overflow: hidden; }
 .detail-scroll-content { flex: 1; overflow-y: auto; font-size: 2.8rem; font-weight: bold; background: #f8fafc; padding: 25px; border-radius: 15px; margin: 20px 0; line-height: 1.2; word-break: break-word; }
+
+/* --- Drag and Drop Visuals --- */
+.box-instance {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 2px solid var(--dark);
+    box-sizing: border-box;
+    overflow: hidden;
+    padding: 10px;
+    background: white;
+    cursor: grab; /* Shows move intent */
+    user-select: none;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.box-instance:active { cursor: grabbing; }
+
+/* When actively dragging */
+.dragging {
+    z-index: 1000 !important;
+    opacity: 0.8;
+    transform: scale(1.02);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    pointer-events: none; /* Allows mouse events to pass to the grid below */
+}
+
+/* Boundary Warning */
+.out-of-bounds {
+    border: 3px solid var(--danger) !important;
+    background: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Size selection buttons as drag sources */
+.size-btn {
+    background: #64748b;
+    color: white;
+    padding: 10px 15px;
+    cursor: grab;
+    transition: 0.2s;
+}
+.size-btn:hover { background: var(--slate); }
+
+/* Grid Highlight while dragging */
+.grid-cell.drag-over {
+    background: rgba(59, 130, 246, 0.05);
+}
