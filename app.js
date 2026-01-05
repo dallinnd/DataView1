@@ -1,48 +1,58 @@
 /**
- * DATA VIEW - MASTER ENGINE v32.0
- * Features: Instant UI Refresh, Persistent .txt History, Optimized Preview Scaling.
+ * DATA VIEW - MASTER ENGINE v33.0
+ * Fixed: Deep Persistence, Presentation Editing, .txt History Log.
  */
 
 let views = [];
 let currentView = null;
 let currentRowIndex = 0;
 
-// Interaction State
+// Drag & Interaction State
 let draggingElement = null;
 let isDraggingNew = false;
 let dragIdx = -1;
 let dragStartX, dragStartY;
 let offset = { x: 0, y: 0 };
 
-const bgPresets = ['#ffffff','#f1f5f9','#1e293b','linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%)','linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)','linear-gradient(135deg, #ee9ca7 0%, #ffdde1 100%)','linear-gradient(135deg, #11998e 0%, #38ef7d 100%)','linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%)','linear-gradient(135deg, #f97316 0%, #ed8936 100%)'];
+const bgPresets = ['#ffffff','#f1f5f9','#1e293b','linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%)','linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)','linear-gradient(135deg, #ee9ca7 0%, #ffdde1 100%)','linear-gradient(135deg, #11998e 0%, #38ef7d 100%)','linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%)','linear-gradient(135deg, #f97316 0%, #ed8936 100%)','linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)'];
 const textPresets = ['#000000','#ffffff','#ef4444','#3b82f6','#10b981','#f97316'];
 
 const iconHome = `<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`;
 const iconLeft = `<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
 const iconRight = `<svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`;
 
-// --- INITIALIZATION ---
+// --- STORAGE & BOOTSTRAP ---
 document.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem('dataView_master_final');
     if (saved) views = JSON.parse(saved);
     const params = new URLSearchParams(window.location.search);
-    if (params.get('view')) {
-        currentView = views.find(v => v.createdAt == params.get('view'));
-        if (currentView) startPresentation();
+    const viewId = params.get('view');
+    if (viewId) {
+        currentView = views.find(v => v.createdAt == viewId);
+        if (currentView) { document.body.classList.add('view-mode-body'); startPresentation(); }
+        else renderHome();
     } else renderHome();
 });
-function saveAll() { localStorage.setItem('dataView_master_final', JSON.stringify(views)); }
+
+// CRITICAL: Updates the master array before writing to LocalStorage
+function saveAll() {
+    if (currentView) {
+        const idx = views.findIndex(v => v.createdAt === currentView.createdAt);
+        if (idx !== -1) views[idx] = currentView;
+    }
+    localStorage.setItem('dataView_master_final', JSON.stringify(views));
+}
 
 // --- HISTORY EXPORT (.txt) ---
 function exportData() {
-    if (!currentView || !currentView.history || currentView.history.length === 0) return alert("No history recorded yet!");
-    
+    if (!currentView || !currentView.history || currentView.history.length === 0) {
+        return alert("No changes recorded in history yet!");
+    }
     let content = `HISTORY LOG - ${currentView.name}\nExported: ${new Date().toLocaleString()}\n`;
-    content += `--------------------------------------------------\n\n`;
-    currentView.history.forEach(l => {
-        content += `Row #${l.row} | Variable: ${l.col} | Old: ${l.old} | Updated: ${l.new}\n`;
+    content += `==================================================\n\n`;
+    currentView.history.forEach((l, i) => {
+        content += `${i+1}. Row #${l.row} | Variable: ${l.col} | Old: ${l.old} | Updated: ${l.new}\n`;
     });
-
     const blob = new Blob([content], { type: 'text/plain' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
@@ -50,41 +60,28 @@ function exportData() {
     link.click();
 }
 
-// --- PRESENTATION & EDITING ---
+// --- PRESENTATION & EDIT LOGIC ---
 function startPresentation() {
-    // Initialize history for this view if it doesn't exist
     if (!currentView.history) currentView.history = [];
-    currentRowIndex = 0; 
-    renderSlide(); 
+    currentRowIndex = 0; renderSlide();
     window.addEventListener('keydown', (e) => { 
         if (e.key === 'ArrowRight' || e.key === ' ') nextSlide(); 
         if (e.key === 'ArrowLeft') prevSlide(); 
-        if (e.key === 'Escape') window.close(); 
     });
 }
 
 function editLiveValue(idx) {
     const box = currentView.boxes[idx];
     const oldVal = currentView.data[currentRowIndex][box.textVal] || '---';
-    const newVal = prompt(`Update ${box.textVal}:`, oldVal);
-
+    const newVal = prompt(`Editing Row ${currentRowIndex + 1} | Variable: ${box.textVal}`, oldVal);
     if (newVal !== null && newVal !== oldVal) {
-        // Record change
-        currentView.history.push({
-            row: currentRowIndex + 1,
-            col: box.textVal,
-            old: oldVal,
-            new: newVal
-        });
-
+        currentView.history.push({ row: currentRowIndex + 1, col: box.textVal, old: oldVal, new: newVal });
         currentView.data[currentRowIndex][box.textVal] = newVal;
-        saveAll(); 
-        closePop(); 
-        renderSlide();
+        saveAll(); closePop(); renderSlide();
     }
 }
 
-// --- INSTANT EDITOR ENGINE ---
+// --- INSTANT EDITOR (Focus-Safe) ---
 function openEditor(idx) {
     const box = currentView.boxes[idx];
     const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
@@ -112,76 +109,60 @@ function openEditor(idx) {
                 </div>
             </div>
             <div class="property-group">
-                <h4>Content Source</h4>
+                <h4>Data Source</h4>
                 <div style="display:flex; background:#f1f5f9; padding:4px; border-radius:10px; margin-bottom:12px;">
                     <button style="flex:1; padding:8px; border-radius:8px; background:${!box.isVar?'white':'transparent'}; color:${!box.isVar?'var(--orange)':'var(--slate)'}" onclick="setMode(${idx},false)">Constant</button>
                     <button style="flex:1; padding:8px; border-radius:8px; background:${box.isVar?'white':'transparent'}; color:${box.isVar?'var(--orange)':'var(--slate)'}" onclick="setMode(${idx},true)">Variable</button>
                 </div>
                 <div id="ctrls-root">${renderPills(idx)}</div>
             </div>
-            <button class="primary-btn" onclick="closePop(); drawBoxes();">Save & Close</button>
+            <button class="primary-btn" onclick="closePop(); drawBoxes();">Finish & Save</button>
         </div>
     </div>`;
     document.body.appendChild(overlay);
 }
 
-function updateTitle(idx, val) {
-    currentView.boxes[idx].title = val;
-    const pt = document.getElementById('prev-title'); if (pt) pt.innerText = val;
-    saveAll();
+function updateTitle(idx, val) { currentView.boxes[idx].title = val; const pt = document.getElementById('prev-title'); if (pt) pt.innerText = val; saveAll(); }
+function applyAttr(idx, key, val) { 
+    currentView.boxes[idx][key] = val; 
+    const p = document.getElementById('prev'); 
+    if (p) { if (key === 'bgColor') p.style.background = val; if (key === 'textColor') p.style.color = val; } 
+    saveAll(); 
 }
-
-function applyAttr(idx, key, val) {
-    currentView.boxes[idx][key] = val;
-    const p = document.getElementById('prev');
-    if (p) {
-        if (key === 'bgColor') p.style.background = val;
-        if (key === 'textColor') p.style.color = val;
-    }
-    saveAll();
-}
-
-function adjustFont(idx, d) {
-    currentView.boxes[idx].fontSize = (currentView.boxes[idx].fontSize || 36) + d;
-    const txt = document.getElementById('prev-txt');
-    const szSpan = document.getElementById('sz');
+function adjustFont(idx, d) { 
+    currentView.boxes[idx].fontSize = (currentView.boxes[idx].fontSize || 36) + d; 
+    const txt = document.getElementById('prev-txt'); const szSpan = document.getElementById('sz');
     if (txt) txt.style.fontSize = currentView.boxes[idx].fontSize + 'px';
     if (szSpan) szSpan.innerText = currentView.boxes[idx].fontSize;
     saveAll();
 }
-
 function renderPills(idx) {
     const box = currentView.boxes[idx];
     if (!box.isVar) return `<input type="text" value="${box.textVal}" oninput="updateBoxValue(${idx}, this.value)" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">`;
     if (!currentView.headers || currentView.headers.length === 0) return `<button class="orange-btn" style="width:100%" onclick="uploadExcelFromEditor(${idx})">Upload Excel to see Variables</button>`;
     return `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
 }
-
-function updateBoxValue(idx, val) {
-    currentView.boxes[idx].textVal = val;
-    const txt = document.getElementById('prev-txt');
-    if (txt) txt.innerText = currentView.boxes[idx].isVar ? `<${val}>` : val;
+function updateBoxValue(idx, val) { 
+    currentView.boxes[idx].textVal = val; 
+    const txt = document.getElementById('prev-txt'); if (txt) txt.innerText = currentView.boxes[idx].isVar ? `<${val}>` : val;
     document.querySelectorAll('.var-pill').forEach(p => p.classList.toggle('selected', p.innerText === val));
-    saveAll();
+    saveAll(); 
 }
 
 // --- DRAG ENGINE ---
 function handleMouseUp(e) {
     if (!draggingElement) return;
-    const container = document.getElementById('canvas-container');
-    const rect = container.getBoundingClientRect();
+    const container = document.getElementById('canvas-container'); const rect = container.getBoundingClientRect();
     const gridX = Math.round(((e.clientX - rect.left - offset.x) / rect.width) * 6);
     const gridY = Math.round(((e.clientY - rect.top - offset.y) / rect.height) * 4);
     const dist = Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY);
-
     if (dist < 5 && !isDraggingNew) { draggingElement.remove(); draggingElement = null; openChoiceMenu(dragIdx); }
     else if (gridX >= 0 && gridY >= 0 && gridX + parseInt(draggingElement.getAttribute('data-w')) <= 6 && gridY + parseInt(draggingElement.getAttribute('data-h')) <= 4) {
         if (isDraggingNew) currentView.boxes.push({ x: gridX, y: gridY, w: parseInt(draggingElement.getAttribute('data-w')), h: parseInt(draggingElement.getAttribute('data-h')), title: 'Title', textVal: 'Value', isVar: false, bgColor: '#ffffff', textColor: '#000', fontSize: 36 });
         else { currentView.boxes[dragIdx].x = gridX; currentView.boxes[dragIdx].y = gridY; }
         saveAll();
     }
-    if (draggingElement) draggingElement.remove();
-    draggingElement = null; isDraggingNew = false; drawBoxes();
+    if (draggingElement) draggingElement.remove(); draggingElement = null; isDraggingNew = false; drawBoxes();
 }
 function startDragExisting(e, idx) {
     e.preventDefault(); dragIdx = idx; dragStartX = e.clientX; dragStartY = e.clientY;
@@ -201,7 +182,7 @@ function startDragNew(e, w, h) {
 function initDragListeners() { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp); }
 function handleMouseMove(e) { if (!draggingElement) return; const container = document.getElementById('canvas-container'); const rect = container.getBoundingClientRect(); draggingElement.style.left = `${e.clientX - rect.left - offset.x}px`; draggingElement.style.top = `${e.clientY - rect.top - offset.y}px`; }
 
-// --- RENDERING HELPERS ---
+// --- BOILERPLATE ---
 function renderHome() { const app = document.getElementById('app'); app.innerHTML = `<h1 class="main-heading">Data View</h1><button class="primary-btn" onclick="createNewView()">+ Create New View</button><h2 style="text-align:center; margin-top:40px; color:#475569; font-size:1rem; text-transform:uppercase;">Existing Displays</h2><div id="view-list"></div>`; views.sort((a,b) => b.updatedAt - a.updatedAt).forEach(v => { const div = document.createElement('div'); div.style = "background:white; padding:20px; border-radius:18px; margin-top:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #e2e8f0;"; div.innerHTML = `<div><strong>${v.name}</strong></div><button class="blue-btn" onclick="openMenu('${v.createdAt}')">Open</button>`; document.getElementById('view-list').appendChild(div); }); }
 function openMenu(id) { currentView = views.find(v => v.createdAt == id); document.getElementById('app').innerHTML = `<h1 class="main-heading">${currentView.name}</h1><div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;"><button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="exportData()">Export (.txt)</button><button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="window.open(window.location.origin+window.location.pathname+'?view=${id}','_blank')">View Presentation</button><button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="renderEditCanvas()">Edit Layout</button><button class="blue-btn" style="height:140px; font-size:1.2rem; background:var(--danger);" onclick="deleteView('${id}')">Delete View</button></div><button onclick="renderHome()" style="margin-top:30px; width:100%; background:none; text-decoration:underline; border:none; color:var(--slate);">Back to Home</button>`; }
 function renderEditCanvas() { document.getElementById('app').innerHTML = `<div class="canvas-header"><h2 style="margin:0">${currentView.name}</h2><div class="header-right"><button class="orange-btn" onclick="uploadExcel()">Upload Excel</button><button class="blue-btn" onclick="openMenu('${currentView.createdAt}')">Save & Exit</button></div></div><div class="canvas-16-9" id="canvas-container"><div class="grid-overlay" id="grid"></div><div id="boxes-layer"></div></div><div style="text-align:center; margin-top:20px; color:var(--slate); font-weight:600;">Dimension Bar (Drag a size to the grid)</div><div style="display:flex; justify-content:center; gap:12px; margin-top:15px; flex-wrap:wrap;">${['2x2','2x1','4x1','6x1','3x3','4x4'].map(s => `<button class="size-btn" onmousedown="startDragNew(event, ${s.split('x')[0]}, ${s.split('x')[1]})">${s}</button>`).join('')}</div>`; const grid = document.getElementById('grid'); grid.innerHTML = ''; for (let i = 0; i < 24; i++) grid.appendChild(document.createElement('div')).className = 'grid-cell'; drawBoxes(); initDragListeners(); }
@@ -216,5 +197,5 @@ function deleteBox(i) { currentView.boxes.splice(i,1); saveAll(); closePop(); dr
 function deleteView(id) { if(confirm("Delete View?")) { views=views.filter(v=>v.createdAt!=id); saveAll(); renderHome(); } }
 function createNewView() { currentView = { name: 'New View', createdAt: Date.now(), updatedAt: Date.now(), boxes: [], headers: [], data: [], history: [] }; views.push(currentView); renderEditCanvas(); }
 function setMode(idx, m) { currentView.boxes[idx].isVar = m; saveAll(); closePop(); openEditor(idx); }
-function nextSlide() { if (currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } }
 function prevSlide() { if (currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
+function nextSlide() { if (currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } }
