@@ -1,9 +1,8 @@
 // ----------------------- State & Data -----------------------
 let views = [];
 let currentView = null;
-let currentExcelData = []; // Array of objects (rows) from Excel
-let currentRowIndex = 0;   // For the "Presentation" mode
-let changeLog = [];        // Tracks on-the-spot edits
+let currentRowIndex = 0;   
+let pendingBox = null;
 
 // ----------------------- Initialization -----------------------
 document.addEventListener('DOMContentLoaded', () => {
@@ -11,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderHome();
 });
 
-// ----------------------- Storage -----------------------
 function saveViews() {
   localStorage.setItem('dataView_views', JSON.stringify(views));
 }
@@ -21,25 +19,30 @@ function loadViews() {
   if (saved) views = JSON.parse(saved);
 }
 
-// ----------------------- Navigation -----------------------
+// ----------------------- Home Screen -----------------------
 function renderHome() {
   const app = document.getElementById('app');
   app.innerHTML = `
-    <header><h1>Data View</h1></header>
-    <button onclick="createNewView()">Create New View</button>
-    <h2>View Existing Displays</h2>
-    <div id="view-list"></div>
+    <header class="app-header"><h1>Data View</h1></header>
+    <main id="app-content">
+      <button class="primary-btn" onclick="createNewView()">+ Create New View</button>
+      <h2 style="margin-top:20px;">View Existing Displays</h2>
+      <div id="view-list"></div>
+    </main>
   `;
 
   const list = document.getElementById('view-list');
   if (views.length === 0) {
-    list.innerHTML = '<p>No displays yet.</p>';
+    list.innerHTML = '<p style="color:#666;">No displays yet. Create one to get started.</p>';
   } else {
     views.sort((a, b) => b.updatedAt - a.updatedAt).forEach(v => {
       const card = document.createElement('div');
       card.className = 'view-card';
       card.innerHTML = `
-        <span><strong>${v.name}</strong> (Last edited: ${new Date(v.updatedAt).toLocaleDateString()})</span>
+        <div>
+          <strong>${v.name}</strong><br>
+          <small>Modified: ${new Date(v.updatedAt).toLocaleDateString()}</small>
+        </div>
         <button onclick="openMenu('${v.createdAt}')">Open</button>
       `;
       list.appendChild(card);
@@ -47,55 +50,37 @@ function renderHome() {
   }
 }
 
-// ----------------------- 2x2 Action Menu -----------------------
-function openMenu(viewId) {
-  currentView = views.find(v => v.createdAt == viewId);
-  const app = document.getElementById('app');
-  app.innerHTML = `
-    <div class="menu-grid">
-      <button onclick="exportView()">Export (Top Left)</button>
-      <button onclick="startPresentation()">View (Top Right)</button>
-      <button onclick="renderEditCanvas()">Edit (Bottom Left)</button>
-      <button onclick="deleteView('${viewId}')" style="color:red">Delete (Bottom Right)</button>
-    </div>
-    <button onclick="renderHome()">Back to Home</button>
-  `;
-}
-
-// ----------------------- Excel Logic -----------------------
 function createNewView() {
   const newView = {
-    name: 'Untitled View',
+    name: 'New View ' + (views.length + 1),
     createdAt: Date.now(),
     updatedAt: Date.now(),
     boxes: [],
     headers: [],
-    data: [] // Storing data here for persistence (Note: Consider IndexedDB for large files)
+    data: [],
+    excelName: null
   };
-  
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.xlsx, .xls';
-  input.onchange = (e) => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const bstr = evt.target.result;
-      const wb = XLSX.read(bstr, { type: 'binary' });
-      const wsname = wb.SheetNames[0];
-      const ws = wb.Sheets[wsname];
-      const json = XLSX.utils.sheet_to_json(ws);
-      
-      newView.headers = Object.keys(json[0] || {});
-      newView.data = json;
-      views.push(newView);
-      saveViews();
-      currentView = newView;
-      renderEditCanvas();
-    };
-    reader.readAsBinaryString(file);
-  };
-  input.click();
+  views.push(newView);
+  saveViews();
+  currentView = newView;
+  renderEditCanvas();
+}
+
+// ----------------------- Action Menu (2x2 Grid) -----------------------
+function openMenu(viewId) {
+  currentView = views.find(v => v.createdAt == viewId);
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="menu-container">
+      <div class="menu-grid">
+        <button class="menu-item" onclick="exportView()">Export<br><small>(Top Left)</small></button>
+        <button class="menu-item" onclick="startPresentation()">View<br><small>(Top Right)</small></button>
+        <button class="menu-item" onclick="renderEditCanvas()">Edit<br><small>(Bottom Left)</small></button>
+        <button class="menu-item delete" onclick="deleteView('${viewId}')">Delete<br><small>(Bottom Right)</small></button>
+      </div>
+      <button class="back-btn" onclick="renderHome()">Back to Home</button>
+    </div>
+  `;
 }
 
 // ----------------------- Canvas (Edit Mode) -----------------------
@@ -103,213 +88,205 @@ function renderEditCanvas() {
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="canvas-header">
-      <input type="text" id="viewName" value="${currentView.name}" onchange="currentView.name=this.value">
-      <div>
-        <button onclick="saveAndGoToMenu()">Save & Next</button>
+      <button onclick="openMenu('${currentView.createdAt}')">Save & Next</button>
+      <input type="text" id="viewNameInput" value="${currentView.name}" oninput="updateViewName(this.value)">
+      <button id="excelBtn" class="orange-btn" onclick="triggerExcelUpload()">
+        ${currentView.excelName ? 'Change Excel' : 'Upload Excel'}
+      </button>
+    </div>
+    
+    <div class="canvas-main">
+      <h3 style="text-align:center;">Your Canvas</h3>
+      <div id="canvas-container" class="canvas-16-9">
+        <div id="grid-bg" class="grid-overlay"></div>
+        <div id="box-layer"></div>
       </div>
     </div>
-    <h3>Your Canvas (16:9)</h3>
-    <div id="canvas-container" class="canvas-16-9">
-      <div id="grid-bg"></div>
-      <div id="box-layer"></div>
-    </div>
-    <div class="palette">
-      <button onclick="prepareBox(2,2)">2x2 Square</button>
-      <button onclick="prepareBox(2,1)">2x1 Rect</button>
-      <button onclick="prepareBox(4,1)">4x1 Rect</button>
-      <button onclick="prepareBox(6,1)">6x1 Rect</button>
-      <button onclick="prepareBox(3,3)">3x3 Square</button>
-      <button onclick="prepareBox(4,4)">4x4 Square</button>
+
+    <div class="palette-bar">
+      <button onclick="setPendingBox(2,2)">2x2 Square</button>
+      <button onclick="setPendingBox(2,1)">2x1 Rect</button>
+      <button onclick="setPendingBox(4,1)">4x1 Rect</button>
+      <button onclick="setPendingBox(6,1)">6x1 Rect</button>
+      <button onclick="setPendingBox(3,3)">3x3 Square</button>
+      <button onclick="setPendingBox(4,4)">4x4 Square</button>
     </div>
   `;
+  renderGrid();
   renderBoxes();
 }
 
-let pendingBox = null;
-function prepareBox(w, h) {
+function updateViewName(val) {
+  currentView.name = val;
+  saveViews();
+}
+
+function triggerExcelUpload() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.xlsx, .xls';
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const bstr = evt.target.result;
+      const wb = XLSX.read(bstr, { type: 'binary' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json(ws);
+      
+      currentView.headers = Object.keys(json[0] || {});
+      currentView.data = json;
+      currentView.excelName = file.name;
+      currentView.updatedAt = Date.now();
+      saveViews();
+      document.getElementById('excelBtn').innerText = 'Change Excel';
+      alert('Excel Uploaded: ' + file.name);
+    };
+    reader.readAsBinaryString(file);
+  };
+  input.click();
+}
+
+function renderGrid() {
+  const grid = document.getElementById('grid-bg');
+  grid.innerHTML = '';
+  // 6 columns x 4 rows
+  for (let i = 0; i < 24; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'grid-cell';
+    const r = Math.floor(i / 6);
+    const c = i % 6;
+    cell.onclick = () => placeBox(c, r);
+    grid.appendChild(cell);
+  }
+}
+
+function setPendingBox(w, h) {
   pendingBox = { w, h };
-  alert(`Click on the grid to place the ${w}x${h} box`);
+  // Add a visual indicator or class to the cursor here later
+}
+
+function placeBox(x, y) {
+  if (!pendingBox) {
+    alert("Select a box size from the bottom first!");
+    return;
+  }
+  
+  if (x + pendingBox.w > 6 || y + pendingBox.h > 4) {
+    alert("Box extends beyond grid boundaries!");
+    return;
+  }
+  
+  const hasOverlap = currentView.boxes.some(b => {
+    return x < b.x + b.w && x + pendingBox.w > b.x && 
+           y < b.y + b.h && y + pendingBox.h > b.y;
+  });
+
+  if (hasOverlap) {
+    alert("Space is already occupied!");
+    return;
+  }
+
+  currentView.boxes.push({
+    x, y, w: pendingBox.w, h: pendingBox.h,
+    title: 'New Title',
+    variable: null,
+    bgColor: '#cce5ff',
+    textColor: '#000000',
+    fontSize: 16
+  });
+  
+  pendingBox = null;
+  saveViews();
+  renderBoxes();
 }
 
 function renderBoxes() {
   const layer = document.getElementById('box-layer');
   layer.innerHTML = '';
   
-  // Create 6x4 Grid Click Targets
-  const grid = document.getElementById('grid-bg');
-  grid.innerHTML = '';
-  for (let r = 0; r < 4; r++) {
-    for (let c = 0; c < 6; c++) {
-      const cell = document.createElement('div');
-      cell.className = 'grid-cell';
-      cell.onclick = () => placeBox(c, r);
-      grid.appendChild(cell);
-    }
-  }
-
   currentView.boxes.forEach((box, index) => {
     const el = document.createElement('div');
     el.className = 'box-instance';
-    el.style.gridColumn = `${box.x + 1} / span ${box.w}`;
-    el.style.gridRow = `${box.y + 1} / span ${box.h}`;
-    el.style.backgroundColor = box.bgColor || '#eee';
-    el.style.color = box.textColor || '#000';
-    el.innerHTML = `<strong>${box.title}</strong><br>${box.variable || 'No Variable'}`;
+    // Logic: Use grid-area or percentage for placement
+    el.style.left = `${(box.x / 6) * 100}%`;
+    el.style.top = `${(box.y / 4) * 100}%`;
+    el.style.width = `${(box.w / 6) * 100}%`;
+    el.style.height = `${(box.h / 4) * 100}%`;
+    
+    el.style.backgroundColor = box.bgColor;
+    el.style.color = box.textColor;
+    el.style.fontSize = box.fontSize + 'px';
+    
+    el.innerHTML = `<div class="box-content"><strong>${box.title}</strong><br>${box.variable || 'No Variable'}</div>`;
     el.onclick = (e) => { e.stopPropagation(); openBoxEditor(index); };
     layer.appendChild(el);
   });
-}
-
-function placeBox(x, y) {
-  if (!pendingBox) return;
-  
-  // Collision/Boundary Check
-  if (x + pendingBox.w > 6 || y + pendingBox.h > 4) {
-    alert("Out of bounds!");
-    return;
-  }
-  
-  const overlap = currentView.boxes.some(b => {
-    return x < b.x + b.w && x + pendingBox.w > b.x && y < b.y + b.h && y + pendingBox.h > b.y;
-  });
-
-  if (overlap) {
-    alert("Space occupied!");
-    return;
-  }
-
-  currentView.boxes.push({
-    x, y, w: pendingBox.w, h: pendingBox.h,
-    title: 'Title',
-    variable: null,
-    bgColor: '#ffffff',
-    textColor: '#000000',
-    fontSize: 16
-  });
-  
-  pendingBox = null;
-  renderBoxes();
 }
 
 // ----------------------- Box Editor Popup -----------------------
 function openBoxEditor(index) {
   const box = currentView.boxes[index];
   const overlay = document.createElement('div');
-  overlay.className = 'editor-overlay';
+  overlay.className = 'popup-overlay';
   overlay.innerHTML = `
-    <div class="editor-popup">
+    <div class="box-editor-window">
       <div class="editor-left">
         <h4>Variables</h4>
-        ${currentView.headers.map(h => `<button onclick="bindVar(${index}, '${h}')">${h}</button>`).join('')}
+        <div class="var-list">
+          ${currentView.headers.length ? 
+            currentView.headers.map(h => `<button class="var-pill" onclick="bindVar(${index}, '${h}')">${h}</button>`).join('') :
+            '<p>Upload Excel to see variables</p>'}
+        </div>
       </div>
       <div class="editor-center">
-        <input type="text" value="${box.title}" oninput="updateBox(${index}, 'title', this.value)">
-        <div class="preview-box" id="preview-${index}" style="background:${box.bgColor}; color:${box.textColor}">
-          ${box.variable ? `<${box.variable}>` : 'Select a variable'}
-        </div>
+         <input type="text" class="title-edit" value="${box.title}" id="edit-title-${index}" oninput="updateBoxData(${index}, 'title', this.value)">
+         <div class="preview-box-large" style="background:${box.bgColor}; color:${box.textColor};">
+            ${box.variable ? box.variable : 'Variable Content'}
+         </div>
       </div>
       <div class="editor-right">
         <h4>Coloring</h4>
-        <p>Background</p>
-        <input type="color" onchange="updateBox(${index}, 'bgColor', this.value)">
-        <p>Text</p>
-        <input type="color" onchange="updateBox(${index}, 'textColor', this.value)">
-        <p>Size</p>
-        <button onclick="updateBox(${index}, 'fontSize', ${box.fontSize + 2})">+</button>
-        <button onclick="updateBox(${index}, 'fontSize', ${box.fontSize - 2})">-</button>
+        <label>Background</label>
+        <input type="color" value="${box.bgColor}" onchange="updateBoxData(${index}, 'bgColor', this.value)">
+        <label>Text Color</label>
+        <input type="color" value="${box.textColor}" onchange="updateBoxData(${index}, 'textColor', this.value)">
+        <label>Text Size</label>
+        <div class="size-controls">
+           <button onclick="updateFontSize(${index}, 2)">+</button>
+           <button onclick="updateFontSize(${index}, -2)">-</button>
+        </div>
       </div>
-      <button class="save-box-btn" onclick="closeEditor()">Save Box</button>
+      <button class="save-box-final" onclick="closeEditor()">Save Box</button>
     </div>
   `;
   document.body.appendChild(overlay);
+}
+
+function updateBoxData(index, prop, val) {
+  currentView.boxes[index][prop] = val;
+}
+
+function updateFontSize(index, delta) {
+  currentView.boxes[index].fontSize += delta;
 }
 
 function bindVar(index, header) {
   currentView.boxes[index].variable = header;
   closeEditor();
-  renderBoxes();
-}
-
-function updateBox(index, prop, val) {
-  currentView.boxes[index][prop] = val;
-  // Live update if preview element exists
 }
 
 function closeEditor() {
-  document.querySelector('.editor-overlay').remove();
+  document.querySelector('.popup-overlay').remove();
   saveViews();
   renderBoxes();
 }
 
-// ----------------------- Presentation Mode -----------------------
-function startPresentation() {
-  currentRowIndex = 0;
-  renderSlide();
-}
-
-function renderSlide() {
-  const row = currentView.data[currentRowIndex];
-  const app = document.getElementById('app');
-  
-  if (!row) {
-    app.innerHTML = `<h1>End of Presentation</h1><button onclick="renderHome()">Exit to Home</button>`;
-    return;
-  }
-
-  app.innerHTML = `
-    <div class="presentation-slide">
-      <div class="canvas-16-9" id="presentation-canvas"></div>
-      <div class="nav-controls">
-        <button onclick="prevSlide()">Prev</button>
-        <button onclick="nextSlide()">Next</button>
-      </div>
-    </div>
-  `;
-
-  const canvas = document.getElementById('presentation-canvas');
-  currentView.boxes.forEach(box => {
-    const el = document.createElement('div');
-    el.className = 'box-instance';
-    el.style.gridColumn = `${box.x + 1} / span ${box.w}`;
-    el.style.gridRow = `${box.y + 1} / span ${box.h}`;
-    el.style.backgroundColor = box.bgColor;
-    el.style.color = box.textColor;
-    el.style.fontSize = box.fontSize + 'px';
-    
-    const val = row[box.variable] || '';
-    el.innerHTML = `<strong>${box.title}</strong><br>${val}`;
-    
-    // Full text popup on click
-    el.onclick = () => openFullText(box.variable, val, box.title);
-    canvas.appendChild(el);
-  });
-}
-
-function nextSlide() { currentRowIndex++; renderSlide(); }
-function prevSlide() { if(currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
-
-function openFullText(variable, value, title) {
-  const overlay = document.createElement('div');
-  overlay.className = 'fulltext-overlay';
-  overlay.innerHTML = `
-    <div class="fulltext-content">
-      <span onclick="this.parentElement.parentElement.remove()">X</span>
-      <h2>${title}</h2>
-      <div class="scroll-area">${value}</div>
-      <button onclick="editOnSpot('${variable}')">Edit</button>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-}
-
-function saveAndGoToMenu() {
-  currentView.updatedAt = Date.now();
-  saveViews();
-  openMenu(currentView.createdAt);
-}
-
 function deleteView(id) {
-  views = views.filter(v => v.createdAt != id);
-  saveViews();
-  renderHome();
+  if(confirm("Are you sure?")) {
+    views = views.filter(v => v.createdAt != id);
+    saveViews();
+    renderHome();
+  }
 }
