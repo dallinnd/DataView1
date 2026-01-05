@@ -22,7 +22,7 @@ body {
 
 #app { padding: 20px; max-width: 1200px; margin: 0 auto; }
 
-/* Buttons */
+/* Buttons & Active States */
 button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; transition: 0.2s; }
 .primary-btn { background: var(--success); color: white; width: 100%; padding: 16px; font-size: 1.1rem; }
 .orange-btn { background: var(--orange); color: white; padding: 10px 20px; }
@@ -59,7 +59,7 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; t
   word-break: break-word;
 }
 
-/* Presentation Mode */
+/* Presentation Mode (Tab-Isolated) */
 .view-mode-body .app-header { display: none !important; }
 .view-mode-body #app { padding: 0; max-width: 100vw !important; height: 100vh; overflow: hidden; }
 
@@ -73,7 +73,7 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; t
     background: white; position: relative; box-shadow: 0 0 100px rgba(0,0,0,0.5);
 }
 
-/* 40% Transparent Nav */
+/* 40% Transparent Nav with 3s Auto-Hide */
 .floating-controls {
     position: fixed; bottom: 30px; left: 50%;
     transform: translateX(-50%); display: flex; align-items: center;
@@ -92,35 +92,41 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; t
 .icon-btn { background: transparent; border: none; cursor: pointer; color: white; display: flex; align-items: center; }
 .slide-counter { color: white; font-weight: bold; min-width: 60px; text-align: center; }
 
-/* Popups & Horizontal Choice Menu */
+/* Popups & Mode Toggles */
 .popup-overlay {
   position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7);
   display: flex; align-items: center; justify-content: center; z-index: 3000;
 }
-.choice-window {
-  background: white; padding: 30px; border-radius: 24px; text-align: center;
-}
-.choice-btn-group { display: flex; gap: 15px; justify-content: center; margin-top: 20px; }
+.mode-toggle { display: flex; background: #f1f5f9; padding: 4px; border-radius: 10px; margin-bottom: 15px; }
+.mode-btn { flex: 1; padding: 8px; font-size: 0.85rem; border-radius: 8px; background: transparent; color: var(--slate); }
 
+/* Orange Active State */
+.mode-btn.active { background: white; color: var(--orange); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+/* Variable Pills */
+.pills-container { display: flex; flex-wrap: wrap; gap: 8px; max-width: 100%; max-height: 200px; overflow-y: auto; padding: 5px; }
+.var-pill { 
+    padding: 6px 14px; background: #fff; border: 1px solid #e2e8f0; 
+    border-radius: 20px; font-size: 0.85rem; cursor: pointer; transition: 0.2s; 
+}
+.var-pill.selected { background: var(--orange); color: white; border-color: var(--orange); }
+
+/* Editor Layout */
 .editor-window {
   background: white; width: 95%; height: 90%; border-radius: 24px;
   display: flex; padding: 25px; gap: 20px; box-sizing: border-box; overflow: hidden;
 }
-
 .editor-preview-area { 
   flex: 2; display: flex; flex-direction: column; align-items: center; 
   justify-content: flex-start; background: #f1f5f9; border-radius: 20px; 
   padding: 30px; overflow: hidden; gap: 20px;
 }
-
 #prev {
     display: flex; flex-direction: column; align-items: center; 
     box-shadow: 0 15px 35px rgba(0,0,0,0.2); border: 3px solid var(--dark);
     box-sizing: border-box; width: 100%; height: auto;
     max-height: 70%; aspect-ratio: var(--box-w) / var(--box-h);
 }
-
 .color-grid { display: flex; gap: 8px; overflow-x: auto; padding: 5px 0; }
 .circle { min-width: 34px; height: 34px; border-radius: 50%; border: 2px solid white; cursor: pointer; flex-shrink: 0; }
 .editor-controls-area { flex: 1.2; overflow-y: auto; padding-left: 15px; border-left: 1px solid #eee; }
-.property-group { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
