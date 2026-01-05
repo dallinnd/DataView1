@@ -1,6 +1,6 @@
 /**
  * DATA VIEW - MASTER ENGINE v14.0
- * Fixed: Nav Persistence, Header Spacing, Detail Popups, and Font Button Cramping.
+ * Corrected: Font Buttons, Header Right Buttons, 3s Nav Hide, Variable Pills.
  */
 
 let views = [];
@@ -65,7 +65,7 @@ function renderEditCanvas() {
     drawGrid(); drawBoxes();
 }
 
-// --- PRESENTATION MODE & NAV FIX ---
+// --- PRESENTATION MODE & NAV ---
 function startPresentation() {
     currentRowIndex = 0; renderSlide(); setupAutoHide();
     window.addEventListener('keydown', (e) => {
@@ -98,25 +98,11 @@ function setupAutoHide() {
         clearTimeout(hideTimer);
         hideTimer = setTimeout(() => { if (!ctrls.matches(':hover')) { ctrls.classList.add('hidden'); document.body.style.cursor = 'none'; } }, 3000);
     };
-    window.removeEventListener('mousemove', reset); window.addEventListener('mousemove', reset);
-    ctrls.addEventListener('mouseenter', () => { clearTimeout(hideTimer); ctrls.classList.remove('hidden'); });
+    window.addEventListener('mousemove', reset);
     reset();
 }
 
-// --- DETAIL MODAL ---
-function openDetailModal(idx, val) {
-    const box = currentView.boxes[idx];
-    const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
-    overlay.innerHTML = `
-        <div class="detail-modal">
-            <div style="display:flex; justify-content:space-between; align-items:center;"><h2>${box.title}</h2><div style="font-size:2rem; cursor:pointer;" onclick="closePop()">✕</div></div>
-            <div class="detail-scroll-content">${val}</div>
-            <div style="display:flex; justify-content:flex-end;"><button class="blue-btn" onclick="closePop()">Close</button></div>
-        </div>`;
-    document.body.appendChild(overlay);
-}
-
-// --- EDITOR LOGIC ---
+// --- EDITOR & POPUPS ---
 function openEditor(idx) {
     const box = currentView.boxes[idx]; const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
     const renderCtrls = () => {
@@ -129,50 +115,26 @@ function openEditor(idx) {
                 <div id="prev" class="box-instance" style="--box-w:${box.w}; --box-h:${box.h}; background:${box.bgColor}; color:${box.textColor}; border-radius:12px; position:relative;"><div class="box-title">${box.title}</div><div id="prev-txt" class="box-content" style="font-size:${box.fontSize}px;">${box.isVar ? '<'+box.textVal+'>' : box.textVal}</div></div></div>
             <div class="editor-controls-area">
                 <div class="property-group"><h4>Colors</h4><div class="color-grid">${bgPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'bgColor','${c}')"></div>`).join('')}</div><div class="color-grid" style="margin-top:10px;">${textPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'textColor','${c}')"></div>`).join('')}</div></div>
-                <div class="property-group"><h4>Font Size</h4><div class="font-controls"><button class="blue-btn" style="width:45px; height:45px; font-size:1.5rem;" onclick="adjustFont(${idx},-2)">-</button><span id="sz" style="font-size:1.4rem; font-weight:bold;">${box.fontSize}</span><button class="blue-btn" style="width:45px; height:45px; font-size:1.5rem;" onclick="adjustFont(${idx},2)">+</button></div></div>
+                <div class="property-group"><h4>Font Size</h4><div class="font-controls"><button class="font-btn" onclick="adjustFont(${idx},-2)">-</button><span id="sz" style="font-size:1.4rem; font-weight:bold;">${box.fontSize}</span><button class="font-btn" onclick="adjustFont(${idx},2)">+</button></div></div>
                 <div class="property-group"><h4>Content</h4><div class="mode-toggle"><button class="mode-btn ${!box.isVar ? 'active' : ''}" onclick="setMode(${idx},false)">Constant</button><button class="mode-btn ${box.isVar ? 'active' : ''}" onclick="setMode(${idx},true)">Variable</button></div><div id="ctrls">${renderCtrls()}</div></div>
                 <button class="primary-btn" onclick="closePop(); drawBoxes();">Save Box</button>
             </div></div>`;
     document.body.appendChild(overlay);
 }
 
-// --- UTILS ---
-function refreshUI(idx) {
-    const box = currentView.boxes[idx]; const p = document.getElementById('prev'); const t = document.getElementById('prev-txt');
-    if(p && t) { p.style.background = box.bgColor; p.style.color = box.textColor; t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal; t.style.fontSize = box.fontSize + 'px'; const ti = p.querySelector('.box-title'); if(ti) ti.innerText = box.title; }
-    saveAll();
-}
-function uploadExcel() {
-    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
-    input.onchange = (e) => { const reader = new FileReader(); reader.onload = (evt) => { const wb = XLSX.read(evt.target.result, {type:'binary'}); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); currentView.headers = Object.keys(data[0] || {}); currentView.data = data; saveAll(); renderEditCanvas(); }; reader.readAsBinaryString(e.target.files[0]); };
-    input.click();
-}
-function uploadExcelFromEditor(idx) {
-    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
-    input.onchange = (e) => { const reader = new FileReader(); reader.onload = (evt) => { const wb = XLSX.read(evt.target.result, {type:'binary'}); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); currentView.headers = Object.keys(data[0] || {}); currentView.data = data; saveAll(); closePop(); openEditor(idx); }; reader.readAsBinaryString(e.target.files[0]); };
-    input.click();
-}
-function updateBoxValue(idx, val) { currentView.boxes[idx].textVal = val; refreshUI(idx); if(currentView.boxes[idx].isVar) { const c = document.getElementById('ctrls'); if(c) c.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`; } }
-function drawBoxes() {
-    const layer = document.getElementById('boxes-layer'); if (!layer) return; layer.innerHTML = '';
-    currentView.boxes.forEach((box, i) => {
-        const div = document.createElement('div'); div.className = 'box-instance'; div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`; div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`; div.style.background = box.bgColor; div.style.color = box.textColor;
-        div.innerHTML = `<div class="box-title">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${box.isVar ? '<' + box.textVal + '>' : box.textVal}</div>`;
-        div.onclick = (e) => { e.stopPropagation(); openChoiceMenu(i); }; layer.appendChild(div);
-    });
-}
-function drawGrid() {
-    const grid = document.getElementById('grid'); grid.innerHTML = '';
-    for (let i = 0; i < 24; i++) {
-        const cell = document.createElement('div'); cell.className = 'grid-cell'; const x = i % 6, y = Math.floor(i / 6);
-        cell.onclick = () => { if(!pendingBox) return; currentView.boxes.push({x, y, w:pendingBox.w, h:pendingBox.h, title:'Title', textVal:'Variable', isVar:true, bgColor:'#ffffff', textColor:'#000', fontSize:36}); pendingBox = null; saveAll(); drawBoxes(); }; grid.appendChild(cell);
-    }
-}
-function openChoiceMenu(idx) {
-    const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
-    overlay.innerHTML = `<div class="choice-window" style="background:white; padding:30px; border-radius:24px; text-align:center;"><h3>Box Options</h3><div style="display:flex; gap:15px; justify-content:center; margin-top:20px;"><button class="blue-btn" onclick="closePop(); openEditor(${idx})">Edit</button><button class="primary-btn" style="background:var(--danger)" onclick="deleteBox(${idx})">Delete</button><button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Back</button></div></div>`;
+// --- SHARED UTILS ---
+function openDetailModal(idx, val) {
+    const box = currentView.boxes[idx]; const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
+    overlay.innerHTML = `<div class="detail-modal"><div style="display:flex; justify-content:space-between; align-items:center;"><h2>${box.title}</h2><div style="font-size:2rem; cursor:pointer;" onclick="closePop()">✕</div></div><div class="detail-scroll-content">${val}</div><div style="display:flex; justify-content:flex-end;"><button class="blue-btn" onclick="closePop()">Close</button></div></div>`;
     document.body.appendChild(overlay);
 }
+function updateBoxValue(idx, val) { currentView.boxes[idx].textVal = val; refreshUI(idx); if(currentView.boxes[idx].isVar) { const c = document.getElementById('ctrls'); if(c) c.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`; } }
+function refreshUI(idx) { const box = currentView.boxes[idx]; const p = document.getElementById('prev'); const t = document.getElementById('prev-txt'); if(p && t) { p.style.background = box.bgColor; p.style.color = box.textColor; t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal; t.style.fontSize = box.fontSize + 'px'; const ti = p.querySelector('.box-title'); if(ti) ti.innerText = box.title; } saveAll(); }
+function uploadExcel() { const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls'; input.onchange = (e) => { const reader = new FileReader(); reader.onload = (evt) => { const wb = XLSX.read(evt.target.result, {type:'binary'}); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); currentView.headers = Object.keys(data[0] || {}); currentView.data = data; saveAll(); renderEditCanvas(); }; reader.readAsBinaryString(e.target.files[0]); }; input.click(); }
+function uploadExcelFromEditor(idx) { const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls'; input.onchange = (e) => { const reader = new FileReader(); reader.onload = (evt) => { const wb = XLSX.read(evt.target.result, {type:'binary'}); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); currentView.headers = Object.keys(data[0] || {}); currentView.data = data; saveAll(); closePop(); openEditor(idx); }; reader.readAsBinaryString(e.target.files[0]); }; input.click(); }
+function drawBoxes() { const layer = document.getElementById('boxes-layer'); if (!layer) return; layer.innerHTML = ''; currentView.boxes.forEach((box, i) => { const div = document.createElement('div'); div.className = 'box-instance'; div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`; div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`; div.style.background = box.bgColor; div.style.color = box.textColor; div.innerHTML = `<div class="box-title">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${box.isVar ? '<' + box.textVal + '>' : box.textVal}</div>`; div.onclick = (e) => { e.stopPropagation(); openChoiceMenu(i); }; layer.appendChild(div); }); }
+function drawGrid() { const grid = document.getElementById('grid'); grid.innerHTML = ''; for (let i = 0; i < 24; i++) { const cell = document.createElement('div'); cell.className = 'grid-cell'; const x = i % 6, y = Math.floor(i / 6); cell.onclick = () => { if(!pendingBox) return; currentView.boxes.push({x, y, w:pendingBox.w, h:pendingBox.h, title:'Title', textVal:'Variable', isVar:true, bgColor:'#ffffff', textColor:'#000', fontSize:36}); pendingBox = null; saveAll(); drawBoxes(); }; grid.appendChild(cell); } }
+function openChoiceMenu(idx) { const overlay = document.createElement('div'); overlay.className = 'popup-overlay'; overlay.innerHTML = `<div class="choice-window" style="background:white; padding:30px; border-radius:24px; text-align:center;"><h3>Box Options</h3><div style="display:flex; gap:15px; justify-content:center; margin-top:20px;"><button class="blue-btn" onclick="closePop(); openEditor(${idx})">Edit</button><button class="primary-btn" style="background:var(--danger)" onclick="deleteBox(${idx})">Delete</button><button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Back</button></div></div>`; document.body.appendChild(overlay); }
 function createNewView() { currentView = { name: 'New View', createdAt: Date.now(), updatedAt: Date.now(), boxes: [], headers: [], data: [] }; views.push(currentView); renderEditCanvas(); }
 function selectSize(w, h) { pendingBox = {w, h}; }
 function applyAttr(idx, prp, val) { currentView.boxes[idx][prp] = val; refreshUI(idx); }
@@ -183,7 +145,4 @@ function deleteBox(i) { currentView.boxes.splice(i,1); saveAll(); closePop(); dr
 function deleteView(id) { if(confirm("Delete View?")) { views=views.filter(v=>v.createdAt!=id); saveAll(); renderHome(); } }
 function nextSlide() { if (currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } }
 function prevSlide() { if (currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
-function exportData() {
-    const ws = XLSX.utils.json_to_sheet(currentView.data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Data");
-    XLSX.writeFile(wb, `${currentView.name}_Export.xlsx`);
-}
+function exportData() { const ws = XLSX.utils.json_to_sheet(currentView.data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Data"); XLSX.writeFile(wb, `${currentView.name}_Export.xlsx`); }
