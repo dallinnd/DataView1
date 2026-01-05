@@ -1,6 +1,6 @@
 /**
- * DATA VIEW - MASTER ENGINE v9.5
- * Features: Dark Semitransparent Nav Bar, SVG Icons, Auto-Hide, Keyboard Nav.
+ * DATA VIEW - MASTER ENGINE v10.0
+ * Fixed: Auto-Hide Timer Reset, Horizontal Nav Layout, 40% Transparent Bar.
  */
 
 let views = [];
@@ -10,7 +10,6 @@ let currentRowIndex = 0;
 let changeLog = [];
 let hideTimer;
 
-// --- SVG Icons ---
 const iconHome = `<svg viewBox="0 0 24 24" width="28" height="28"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white"/></svg>`;
 const iconLeft = `<svg viewBox="0 0 24 24" width="28" height="28"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" fill="white"/></svg>`;
 const iconRight = `<svg viewBox="0 0 24 24" width="28" height="28"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" fill="white"/></svg>`;
@@ -18,9 +17,9 @@ const iconRight = `<svg viewBox="0 0 24 24" width="28" height="28"><path d="M10 
 const bgPresets = ['#ffffff','#f1f5f9','#cbd5e1','linear-gradient(135deg,#60a5fa,#3b82f6)','linear-gradient(135deg,#34d399,#10b981)','linear-gradient(135deg,#fb923c,#f97316)','#fee2e2','#fef3c7','#dcfce7','#1e293b','#334155','#475569'];
 const textPresets = ['#000000','#ffffff','#475569','#ef4444','#3b82f6','#10b981'];
 
-// --- ROUTING & INIT ---
+// --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('dataView_master_final');
+    const saved = localStorage.getItem('dataView_v10');
     if (saved) views = JSON.parse(saved);
 
     const params = new URLSearchParams(window.location.search);
@@ -35,9 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function saveAll() { localStorage.setItem('dataView_master_final', JSON.stringify(views)); }
+function saveAll() { localStorage.setItem('dataView_v10', JSON.stringify(views)); }
 
-// --- NAVIGATION ---
+// --- HOME & MENU ---
 function renderHome() {
     const app = document.getElementById('app');
     app.innerHTML = `<button class="primary-btn" onclick="createNewView()">+ Create New View</button><h2 style="text-align:center; margin-top:40px;">Existing Displays</h2><div id="view-list"></div>`;
@@ -64,7 +63,61 @@ function openMenu(id) {
         </div><button onclick="renderHome()" style="margin-top:30px; width:100%; background:none; text-decoration:underline; border:none; cursor:pointer;">Back Home</button>`;
 }
 
-// --- CANVAS ---
+// --- PRESENTATION (V10.0) ---
+
+
+function startPresentation() {
+    currentRowIndex = 0; renderSlide(); setupAutoHide();
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+        if (e.key === 'ArrowLeft') prevSlide();
+        if (e.key === 'Escape') window.close();
+    });
+}
+
+function renderSlide() {
+    const row = currentView.data[currentRowIndex] || {};
+    document.getElementById('app').innerHTML = `
+        <div class="presentation-fullscreen">
+            <div class="slide-fit" id="slide-canvas"></div>
+            <div class="floating-controls" id="controls">
+                <button class="icon-btn" onclick="window.close()">${iconHome}</button>
+                <div class="slide-counter">${currentRowIndex+1} / ${currentView.data.length}</div>
+                <div class="nav-group-right">
+                    <button class="icon-btn" onclick="prevSlide()">${iconLeft}</button>
+                    <button class="icon-btn" onclick="nextSlide()">${iconRight}</button>
+                </div>
+            </div>
+        </div>`;
+    const canvas = document.getElementById('slide-canvas');
+    currentView.boxes.forEach((box) => {
+        const div = document.createElement('div'); div.className = 'box-instance';
+        div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`;
+        div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`;
+        div.style.background = box.bgColor; div.style.color = box.textColor;
+        const val = box.isVar ? (row[box.textVal] || '---') : box.textVal;
+        div.innerHTML = `<small style="opacity:0.6; font-size:0.6em;">${box.title}</small><div style="font-size:${box.fontSize}px; font-weight:bold;">${val}</div>`;
+        canvas.appendChild(div);
+    });
+}
+
+function setupAutoHide() {
+    const ctrls = document.getElementById('controls'); if (!ctrls) return;
+    const resetTimer = () => {
+        ctrls.classList.remove('hidden'); document.body.style.cursor = 'default';
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => {
+            if (!ctrls.matches(':hover')) { ctrls.classList.add('hidden'); document.body.style.cursor = 'none'; }
+        }, 5000);
+    };
+    window.addEventListener('mousemove', resetTimer);
+    window.addEventListener('click', resetTimer);
+    ctrls.addEventListener('mouseenter', () => { clearTimeout(hideTimer); ctrls.classList.remove('hidden'); });
+    ctrls.addEventListener('mouseleave', resetTimer);
+    resetTimer();
+}
+
+// --- CANVAS & EDITOR ---
 function renderEditCanvas() {
     document.getElementById('app').innerHTML = `
         <div class="canvas-header"><input type="text" value="${currentView.name}" oninput="currentView.name=this.value; saveAll();" style="font-size:1.2rem; font-weight:bold; border:none; outline:none; background:transparent;"><button class="orange-btn" onclick="uploadExcel()">Upload Excel</button><button class="blue-btn" onclick="openMenu('${currentView.createdAt}')">Save & Exit</button></div>
@@ -93,66 +146,67 @@ function drawBoxes() {
         div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`;
         div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`;
         div.style.background = box.bgColor; div.style.color = box.textColor;
-        div.innerHTML = `<small style="font-size:0.6em; opacity:0.8;">${box.title}</small><div style="font-size:${box.fontSize}px; font-weight:bold;">${box.isVar ? '<' + box.textVal + '>' : box.textVal}</div>`;
+        const display = box.isVar ? `<${box.textVal}>` : box.textVal;
+        div.innerHTML = `<small style="font-size:0.6em; opacity:0.8;">${box.title}</small><div style="font-size:${box.fontSize}px; font-weight:bold;">${display}</div>`;
         div.onclick = (e) => { e.stopPropagation(); openChoiceMenu(i); }; layer.appendChild(div);
     });
 }
 
-// --- PRESENTATION (V9.5) ---
-
-
-function startPresentation() {
-    currentRowIndex = 0; renderSlide(); setupAutoHide();
-    window.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight') nextSlide();
-        if (e.key === 'ArrowLeft') prevSlide();
-        if (e.key === 'Escape') window.close();
-    });
-}
-
-function renderSlide() {
-    const row = currentView.data[currentRowIndex] || {};
-    document.getElementById('app').innerHTML = `
-        <div class="presentation-fullscreen">
-            <div class="slide-fit" id="slide-canvas"></div>
-            <div class="floating-controls" id="controls">
-                <button class="icon-btn" onclick="window.close()">${iconHome}</button>
-                <div class="slide-counter">${currentRowIndex+1} / ${currentView.data.length}</div>
-                <div class="nav-group-right"><button class="icon-btn" onclick="prevSlide()">${iconLeft}</button><button class="icon-btn" onclick="nextSlide()">${iconRight}</button></div>
+// --- UTILS ---
+function openEditor(idx) {
+    const box = currentView.boxes[idx]; const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
+    const renderCtrls = () => {
+        if (!box.isVar) return `<input type="text" value="${box.textVal}" oninput="updateBoxValue(${idx}, this.value)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">`;
+        return `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
+    };
+    overlay.innerHTML = `
+        <div class="editor-window">
+            <div class="editor-preview-area">
+                <input type="text" value="${box.title}" oninput="currentView.boxes[${idx}].title=this.value; refreshUI(${idx})" style="font-size:1.5rem; text-align:center; font-weight:bold; border:none; background:transparent; border-bottom:2px solid #3b82f6; outline:none; margin-bottom:20px; width:80%;">
+                <div id="prev" style="--box-w:${box.w}; --box-h:${box.h}; background:${box.bgColor}; color:${box.textColor}; border-radius:12px;"><small style="opacity:0.7; font-size:0.8em; margin-bottom:10px;">${box.title}</small><div id="prev-txt" style="font-weight:bold; font-size:${box.fontSize}px;">${box.isVar ? '<' + box.textVal + '>' : box.textVal}</div></div>
+            </div>
+            <div class="editor-controls-area">
+                <div class="property-group"><h4>Coloring</h4><p><small>BG Row</small></p><div class="color-grid">${bgPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'bgColor','${c}')"></div>`).join('')}</div><p style="margin-top:10px;"><small>Text Row</small></p><div class="color-grid">${textPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'textColor','${c}')"></div>`).join('')}</div></div>
+                <div class="property-group"><h4>Font Size</h4><div class="font-controls"><button class="circle-btn" onclick="adjustFont(${idx},-2)">-</button><span id="sz" style="font-weight:bold;">${box.fontSize}</span><button class="circle-btn" onclick="adjustFont(${idx},2)">+</button></div></div>
+                <div class="property-group"><h4>Content</h4><div class="mode-toggle"><button class="mode-btn ${!box.isVar ? 'active' : ''}" onclick="setMode(${idx},false)">Constant</button><button class="mode-btn ${box.isVar ? 'active' : ''}" onclick="setMode(${idx},true)">Variable</button></div><div id="ctrls">${renderCtrls()}</div></div>
+                <button class="primary-btn" onclick="closePop(); drawBoxes();">Save Box</button>
             </div>
         </div>`;
-    const canvas = document.getElementById('slide-canvas');
-    currentView.boxes.forEach((box, i) => {
-        const div = document.createElement('div'); div.className = 'box-instance';
-        div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`;
-        div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`;
-        div.style.background = box.bgColor; div.style.color = box.textColor;
-        const val = box.isVar ? (row[box.textVal] || '---') : box.textVal;
-        div.innerHTML = `<small style="opacity:0.6; font-size:0.6em;">${box.title}</small><div style="font-size:${box.fontSize}px; font-weight:bold;">${val}</div>`;
-        canvas.appendChild(div);
-    });
+    document.body.appendChild(overlay);
 }
 
-function setupAutoHide() {
-    const ctrls = document.getElementById('controls'); if (!ctrls) return;
-    const show = () => {
-        ctrls.classList.remove('hidden'); document.body.style.cursor = 'default';
-        clearTimeout(hideTimer);
-        hideTimer = setTimeout(() => { if (!ctrls.matches(':hover')) { ctrls.classList.add('hidden'); document.body.style.cursor = 'none'; } }, 5000);
-    };
-    window.addEventListener('mousemove', show); window.addEventListener('click', show);
-    ctrls.addEventListener('mouseenter', () => { clearTimeout(hideTimer); ctrls.classList.remove('hidden'); });
-    ctrls.addEventListener('mouseleave', show); show();
+function updateBoxValue(idx, val) { currentView.boxes[idx].textVal = val; refreshUI(idx); }
+function refreshUI(idx) {
+    const box = currentView.boxes[idx]; const p = document.getElementById('prev'); const t = document.getElementById('prev-txt');
+    if(p && t) { p.style.background = box.bgColor; p.style.color = box.textColor; t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal; t.style.fontSize = box.fontSize + 'px'; }
+    saveAll();
 }
-
-// ... rest of support functions (Editor, Excel, Utils) remain from v9.0
-function selectSize(w, h) { pendingBox = {w, h}; }
-function closePop() { const p = document.querySelector('.popup-overlay'); if(p) p.remove(); }
+function uploadExcel() {
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
+    input.onchange = (e) => {
+        const reader = new FileReader(); reader.onload = (evt) => {
+            const wb = XLSX.read(evt.target.result, {type:'binary'}); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+            currentView.headers = Object.keys(data[0] || {}); currentView.data = data; saveAll(); renderEditCanvas();
+        }; reader.readAsBinaryString(e.target.files[0]);
+    }; input.click();
+}
 function nextSlide() { if (currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } }
 function prevSlide() { if (currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
+function applyAttr(idx, prp, val) { currentView.boxes[idx][prp] = val; refreshUI(idx); }
+function adjustFont(idx, d) { currentView.boxes[idx].fontSize += d; document.getElementById('sz').innerText = currentView.boxes[idx].fontSize; refreshUI(idx); }
+function setMode(idx, m) { currentView.boxes[idx].isVar = m; closePop(); openEditor(idx); saveAll(); }
+function closePop() { const p = document.querySelector('.popup-overlay'); if(p) p.remove(); }
+function deleteBox(i) { currentView.boxes.splice(i,1); saveAll(); closePop(); drawBoxes(); }
 function createNewView() { currentView = { name: 'New View', createdAt: Date.now(), updatedAt: Date.now(), boxes: [], headers: [], data: [] }; views.push(currentView); renderEditCanvas(); }
+function selectSize(w, h) { pendingBox = {w, h}; }
 function openChoiceMenu(idx) {
     const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
     overlay.innerHTML = `<div class="choice-window" style="background:white; padding:25px; border-radius:20px; text-align:center;"><button class="primary-btn" onclick="closePop(); openEditor(${idx})">Edit</button><br><br><button class="primary-btn" style="background:var(--danger)" onclick="deleteBox(${idx})">Delete</button></div>`;
     document.body.appendChild(overlay);
+}
+function deleteView(id) { if(confirm("Delete View?")) { views=views.filter(v=>v.createdAt!=id); saveAll(); renderHome(); } }
+function exportData() {
+    const ws = XLSX.utils.json_to_sheet(currentView.data);
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Data");
+    XLSX.writeFile(wb, `${currentView.name}_Export.xlsx`);
 }
