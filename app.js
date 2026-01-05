@@ -1,12 +1,13 @@
 /**
- * DATA VIEW - MASTER ENGINE v15.1 (UNIFIED)
- * Features: Separated Color Rows, Refined Orange Toggle, Pill Variables.
+ * DATA VIEW - MASTER ENGINE v16.0
+ * Features: Side-by-side Nav, Live Value Editing, Action Logging, Compact UI.
  */
 
 let views = [];
 let currentView = null;
 let pendingBox = null;
 let currentRowIndex = 0;
+let changeLog = [];
 
 const iconHome = `<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`;
 const iconLeft = `<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
@@ -28,107 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function saveAll() { localStorage.setItem('dataView_master_final', JSON.stringify(views)); }
 
-// --- CORE NAVIGATION ---
-function renderHome() {
-    const app = document.getElementById('app');
-    app.innerHTML = `<button class="primary-btn" onclick="createNewView()">+ Create New View</button><h2 style="text-align:center; margin-top:40px; color:#475569;">Existing Displays</h2><div id="view-list"></div>`;
-    views.sort((a,b) => b.updatedAt - a.updatedAt).forEach(v => {
-        const div = document.createElement('div');
-        div.style = "background:white; padding:20px; border-radius:15px; margin-top:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #e2e8f0; box-shadow:0 2px 4px rgba(0,0,0,0.02);";
-        div.innerHTML = `<div><strong>${v.name}</strong></div><button class="blue-btn" onclick="openMenu('${v.createdAt}')">Open</button>`;
-        document.getElementById('view-list').appendChild(div);
-    });
-}
-
-function openMenu(id) {
-    currentView = views.find(v => v.createdAt == id);
-    document.getElementById('app').innerHTML = `
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:50px;">
-            <button class="blue-btn" style="height:140px;" onclick="exportData()">Export</button>
-            <button class="blue-btn" style="height:140px;" onclick="window.open(window.location.origin+window.location.pathname+'?view=${id}','_blank')">View</button>
-            <button class="blue-btn" style="height:140px;" onclick="renderEditCanvas()">Edit</button>
-            <button class="blue-btn" style="height:140px; background:var(--danger);" onclick="deleteView('${id}')">Delete</button>
-        </div><button onclick="renderHome()" style="margin-top:30px; width:100%; background:none; text-decoration:underline; border:none; cursor:pointer;">Back Home</button>`;
-}
-
-// --- CANVAS & GRID ---
-function renderEditCanvas() {
-    document.getElementById('app').innerHTML = `
-        <div class="canvas-header">
-            <input type="text" value="${currentView.name}" oninput="currentView.name=this.value; saveAll();" style="font-size:1.5rem; font-weight:bold; border:none; outline:none; background:transparent; flex:1;">
-            <div class="header-right">
-                <button class="orange-btn" onclick="uploadExcel()">Upload Excel</button>
-                <button class="blue-btn" onclick="openMenu('${currentView.createdAt}')">Save & Exit</button>
-            </div>
-        </div>
-        <div class="canvas-16-9" id="canvas-container"><div class="grid-overlay" id="grid"></div><div id="boxes-layer"></div></div>
-        <div style="display:flex; justify-content:center; gap:10px; margin-top:20px; flex-wrap:wrap;">${['2x2','2x1','4x1','6x1','3x3','4x4'].map(s => `<button class="blue-btn" style="background:#64748b" onclick="selectSize(${s.split('x')[0]},${s.split('x')[1]})">${s}</button>`).join('')}</div>`;
-    drawGrid(); drawBoxes();
-}
-
-function drawGrid() {
-    const grid = document.getElementById('grid'); grid.innerHTML = '';
-    for (let i = 0; i < 24; i++) {
-        const cell = document.createElement('div'); cell.className = 'grid-cell';
-        const x = i % 6, y = Math.floor(i / 6);
-        cell.onclick = () => {
-            if(!pendingBox) return;
-            currentView.boxes.push({x, y, w:pendingBox.w, h:pendingBox.h, title:'Title', textVal:'Variable', isVar:true, bgColor:'#ffffff', textColor:'#000', fontSize:36});
-            pendingBox = null; saveAll(); drawBoxes();
-        }; grid.appendChild(cell);
-    }
-}
-
-function drawBoxes() {
-    const layer = document.getElementById('boxes-layer'); if (!layer) return; layer.innerHTML = '';
-    currentView.boxes.forEach((box, i) => {
-        const div = document.createElement('div'); div.className = 'box-instance';
-        div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`;
-        div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`;
-        div.style.background = box.bgColor; div.style.color = box.textColor;
-        const display = box.isVar ? `<${box.textVal}>` : box.textVal;
-        div.innerHTML = `<div class="box-title">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${display}</div>`;
-        div.onclick = (e) => { e.stopPropagation(); openChoiceMenu(i); }; layer.appendChild(div);
-    });
-}
-
-// --- EDITOR LOGIC ---
-function openEditor(idx) {
-    const box = currentView.boxes[idx]; const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
-    
-    const renderContentCtrls = () => {
-        if (!box.isVar) return `<input type="text" value="${box.textVal}" oninput="updateBoxValue(${idx}, this.value)" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">`;
-        if (!currentView.headers || currentView.headers.length === 0) return `<button class="orange-btn" style="width:100%" onclick="uploadExcelFromEditor(${idx})">Upload Excel to see Variables</button>`;
-        return `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
-    };
-
-    overlay.innerHTML = `<div class="editor-window">
-            <div class="editor-preview-area"><input type="text" value="${box.title}" oninput="currentView.boxes[${idx}].title=this.value; refreshUI(${idx})" style="font-size:1.5rem; text-align:center; font-weight:bold; border:none; background:transparent; border-bottom:2px solid var(--orange); outline:none; margin-bottom:10px; width:80%;">
-                <div id="prev" style="--box-w:${box.w}; --box-h:${box.h}; background:${box.bgColor}; color:${box.textColor}; border-radius:12px; position:relative;"><div class="box-title" style="font-size:28px;">${box.title}</div><div id="prev-txt" class="box-content" style="font-size:${box.fontSize}px;">${box.isVar ? '<'+box.textVal+'>' : box.textVal}</div></div></div>
-            <div class="editor-controls-area">
-                <div class="property-group">
-                    <h4>Background Color</h4>
-                    <div class="color-grid">${bgPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'bgColor','${c}')"></div>`).join('')}</div>
-                    <h4 style="margin-top:15px;">Text Color</h4>
-                    <div class="color-grid">${textPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'textColor','${c}')"></div>`).join('')}</div>
-                </div>
-                <div class="property-group"><h4>Font Size</h4><div class="font-controls"><button class="font-btn" onclick="adjustFont(${idx},-2)">-</button><span id="sz" style="font-size:1.4rem; font-weight:bold;">${box.fontSize}</span><button class="font-btn" onclick="adjustFont(${idx},2)">+</button></div></div>
-                <div class="property-group">
-                    <h4>Content</h4>
-                    <div class="segmented-control">
-                        <button class="segment-btn ${!box.isVar ? 'active' : ''}" onclick="setMode(${idx},false)">Constant</button>
-                        <button class="segment-btn ${box.isVar ? 'active' : ''}" onclick="setMode(${idx},true)">Variable</button>
-                    </div>
-                    <div id="ctrls">${renderContentCtrls()}</div>
-                </div>
-                <button class="primary-btn" onclick="closePop(); drawBoxes();">Save Box</button>
-            </div></div>`;
-    document.body.appendChild(overlay);
-}
-
-// --- PRESENTATION ---
+// --- PRESENTATION MODE ---
 function startPresentation() {
-    currentRowIndex = 0; renderSlide();
+    currentRowIndex = 0;
+    renderSlide();
     window.addEventListener('keydown', (e) => {
         if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
         if (e.key === 'ArrowLeft') prevSlide();
@@ -143,33 +47,146 @@ function renderSlide() {
             <div class="slide-fit" id="slide-canvas"></div>
             <div class="floating-controls">
                 <button class="icon-btn" onclick="window.close()">${iconHome}</button>
-                <div class="slide-counter">${currentRowIndex+1} / ${currentView.data.length}</div>
+                <div class="slide-counter">${currentRowIndex+1}/${currentView.data.length}</div>
                 <div class="nav-group-right">
                     <button class="icon-btn" onclick="prevSlide()">${iconLeft}</button>
                     <button class="icon-btn" onclick="nextSlide()">${iconRight}</button>
                 </div>
             </div>
         </div>`;
+    
     const canvas = document.getElementById('slide-canvas');
     currentView.boxes.forEach((box, i) => {
-        const div = document.createElement('div'); div.className = 'box-instance';
+        const div = document.createElement('div');
+        div.className = 'box-instance';
         div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`;
         div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`;
         div.style.background = box.bgColor; div.style.color = box.textColor;
         const val = box.isVar ? (row[box.textVal] || '---') : box.textVal;
         div.innerHTML = `<div class="box-title">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${val}</div>`;
-        div.onclick = (e) => { e.stopPropagation(); openDetailModal(i, val); };
+        div.onclick = () => openDetailModal(i, val);
         canvas.appendChild(div);
     });
 }
 
-// --- UTILS ---
+// --- LIVE EDITING & POPUPS ---
+function openDetailModal(idx, val) {
+    const box = currentView.boxes[idx];
+    const overlay = document.createElement('div');
+    overlay.className = 'popup-overlay';
+    
+    // Only show Edit button if it's a Variable
+    const editBtn = box.isVar ? `<button class="orange-btn" onclick="editLiveValue(${idx})">Edit Value</button>` : '';
+
+    overlay.innerHTML = `
+        <div class="detail-modal">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>${box.title} ${box.isVar ? `<small style="color:var(--slate)">[${box.textVal}]</small>` : ''}</h2>
+                <div style="font-size:2rem; cursor:pointer;" onclick="closePop()">✕</div>
+            </div>
+            <div class="detail-scroll-content" id="detail-val">${val}</div>
+            <div class="action-row">
+                ${editBtn}
+                <button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Close</button>
+            </div>
+        </div>`;
+    document.body.appendChild(overlay);
+}
+
+function editLiveValue(boxIdx) {
+    const box = currentView.boxes[boxIdx];
+    const oldVal = currentView.data[currentRowIndex][box.textVal];
+    const newVal = prompt(`Enter new value for ${box.textVal}:`, oldVal);
+
+    if (newVal !== null && newVal !== oldVal) {
+        // Record change in log
+        changeLog.push({
+            timestamp: new Date().toLocaleString(),
+            view: currentView.name,
+            row: currentRowIndex + 1,
+            variable: box.textVal,
+            old: oldVal,
+            new: newVal
+        });
+
+        // Update working data
+        currentView.data[currentRowIndex][box.textVal] = newVal;
+        saveAll();
+        
+        // Refresh UI
+        closePop();
+        renderSlide();
+    }
+}
+
+// --- DATA EXPORT (Excel + Log) ---
+function exportData() {
+    // 1. Export Updated Excel
+    const ws = XLSX.utils.json_to_sheet(currentView.data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Updated Data");
+    XLSX.writeFile(wb, `${currentView.name}_Edited.xlsx`);
+
+    // 2. Export Change Log (if any)
+    if (changeLog.length > 0) {
+        let logContent = "CHANGE LOG - " + currentView.name + "\n";
+        logContent += "====================================\n";
+        changeLog.forEach(entry => {
+            logContent += `[${entry.timestamp}] Row ${entry.row} | ${entry.variable}: "${entry.old}" -> "${entry.new}"\n`;
+        });
+        
+        const blob = new Blob([logContent], { type: 'text/plain' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${currentView.name}_ChangeLog.txt`;
+        link.click();
+    }
+}
+
+// --- UTILS & EDITOR ---
+function openEditor(idx) {
+    const box = currentView.boxes[idx]; const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
+    const renderCtrls = () => {
+        if (!box.isVar) return `<input type="text" value="${box.textVal}" oninput="updateBoxValue(${idx}, this.value)" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">`;
+        if (!currentView.headers || currentView.headers.length === 0) return `<button class="orange-btn" style="width:100%" onclick="uploadExcelFromEditor(${idx})">Upload Excel to see Variables</button>`;
+        return `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
+    };
+    overlay.innerHTML = `<div class="editor-window">
+        <div class="editor-preview-area">
+            <input type="text" value="${box.title}" oninput="currentView.boxes[${idx}].title=this.value; refreshUI(${idx})" style="font-size:1.5rem; text-align:center; font-weight:bold; border:none; background:transparent; border-bottom:2px solid var(--orange); outline:none; margin-bottom:10px; width:80%;">
+            <div id="prev" style="--box-w:${box.w}; --box-h:${box.h}; background:${box.bgColor}; color:${box.textColor}; border-radius:12px; position:relative;"><div class="box-title" style="font-size:28px;">${box.title}</div><div id="prev-txt" class="box-content" style="font-size:${box.fontSize}px;">${box.isVar ? '<'+box.textVal+'>' : box.textVal}</div></div>
+        </div>
+        <div class="editor-controls-area">
+            <div class="property-group">
+                <h4>Background Color</h4><div class="color-grid">${bgPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'bgColor','${c}')"></div>`).join('')}</div>
+                <h4 style="margin-top:15px;">Text Color</h4><div class="color-grid">${textPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'textColor','${c}')"></div>`).join('')}</div>
+            </div>
+            <div class="property-group"><h4>Font Size</h4><div class="font-controls"><button class="font-btn" onclick="adjustFont(${idx},-2)">-</button><span id="sz" style="font-size:1.4rem; font-weight:bold;">${box.fontSize}</span><button class="font-btn" onclick="adjustFont(${idx},2)">+</button></div></div>
+            <div class="property-group"><h4>Content</h4><div class="segmented-control"><button class="segment-btn ${!box.isVar ? 'active' : ''}" onclick="setMode(${idx},false)">Constant</button><button class="segment-btn ${box.isVar ? 'active' : ''}" onclick="setMode(${idx},true)">Variable</button></div><div id="ctrls">${renderCtrls()}</div></div>
+            <button class="primary-btn" onclick="closePop(); drawBoxes();">Save Box</button>
+        </div></div>`;
+    document.body.appendChild(overlay);
+}
+
+// ... rest of shared logic (renderHome, refreshUI, uploadExcel, drawBoxes, etc.) ...
+function renderHome() {
+    const app = document.getElementById('app');
+    app.innerHTML = `<button class="primary-btn" onclick="createNewView()">+ Create New View</button><h2 style="text-align:center; margin-top:40px;">Existing Displays</h2><div id="view-list"></div>`;
+    views.sort((a,b) => b.updatedAt - a.updatedAt).forEach(v => {
+        const div = document.createElement('div'); div.style = "background:white; padding:20px; border-radius:15px; margin-top:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #e2e8f0;";
+        div.innerHTML = `<div><strong>${v.name}</strong></div><button class="blue-btn" onclick="openMenu('${v.createdAt}')">Open</button>`;
+        document.getElementById('view-list').appendChild(div);
+    });
+}
 function refreshUI(idx) { const box = currentView.boxes[idx]; const p = document.getElementById('prev'); const t = document.getElementById('prev-txt'); if(p && t) { p.style.background = box.bgColor; p.style.color = box.textColor; t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal; t.style.fontSize = box.fontSize + 'px'; const ti = p.querySelector('.box-title'); if(ti) ti.innerText = box.title; } saveAll(); }
 function updateBoxValue(idx, val) { currentView.boxes[idx].textVal = val; refreshUI(idx); if(currentView.boxes[idx].isVar && currentView.headers.length > 0) { const c = document.getElementById('ctrls'); if(c) c.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`; } }
 function uploadExcel() { const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls'; input.onchange = (e) => { const reader = new FileReader(); reader.onload = (evt) => { const wb = XLSX.read(evt.target.result, {type:'binary'}); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); currentView.headers = Object.keys(data[0] || {}); currentView.data = data; saveAll(); renderEditCanvas(); }; reader.readAsBinaryString(e.target.files[0]); }; input.click(); }
 function uploadExcelFromEditor(idx) { const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls'; input.onchange = (e) => { const reader = new FileReader(); reader.onload = (evt) => { const wb = XLSX.read(evt.target.result, {type:'binary'}); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); currentView.headers = Object.keys(data[0] || {}); currentView.data = data; saveAll(); closePop(); openEditor(idx); }; reader.readAsBinaryString(e.target.files[0]); }; input.click(); }
+function drawBoxes() { const layer = document.getElementById('boxes-layer'); if (!layer) return; layer.innerHTML = ''; currentView.boxes.forEach((box, i) => { const div = document.createElement('div'); div.className = 'box-instance'; div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`; div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`; div.style.background = box.bgColor; div.style.color = box.textColor; div.innerHTML = `<div class="box-title">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${box.isVar ? '<' + box.textVal + '>' : box.textVal}</div>`; div.onclick = (e) => { e.stopPropagation(); openChoiceMenu(i); }; layer.appendChild(div); }); }
+function drawGrid() { const grid = document.getElementById('grid'); grid.innerHTML = ''; for (let i = 0; i < 24; i++) { const cell = document.createElement('div'); cell.className = 'grid-cell'; const x = i % 6, y = Math.floor(i / 6); cell.onclick = () => { if(!pendingBox) return; currentView.boxes.push({x, y, w:pendingBox.w, h:pendingBox.h, title:'Title', textVal:'Variable', isVar:true, bgColor:'#ffffff', textColor:'#000', fontSize:36}); pendingBox = null; saveAll(); drawBoxes(); }; grid.appendChild(cell); } }
 function openChoiceMenu(idx) { const overlay = document.createElement('div'); overlay.className = 'popup-overlay'; overlay.innerHTML = `<div class="choice-window" style="background:white; padding:30px; border-radius:24px; text-align:center;"><h3>Box Options</h3><div style="display:flex; gap:15px; justify-content:center; margin-top:20px;"><button class="blue-btn" onclick="closePop(); openEditor(${idx})">Edit</button><button class="primary-btn" style="background:var(--danger)" onclick="deleteBox(${idx})">Delete</button><button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Back</button></div></div>`; document.body.appendChild(overlay); }
-function openDetailModal(idx, val) { const box = currentView.boxes[idx]; const overlay = document.createElement('div'); overlay.className = 'popup-overlay'; overlay.innerHTML = `<div class="detail-modal"><div style="display:flex; justify-content:space-between; align-items:center;"><h2>${box.title}</h2><div style="font-size:2rem; cursor:pointer;" onclick="closePop()">✕</div></div><div class="detail-scroll-content">${val}</div><div style="display:flex; justify-content:flex-end;"><button class="blue-btn" onclick="closePop()">Close</button></div></div>`; document.body.appendChild(overlay); }
+function nextSlide() { if (currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } }
+function prevSlide() { if (currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
 function createNewView() { currentView = { name: 'New View', createdAt: Date.now(), updatedAt: Date.now(), boxes: [], headers: [], data: [] }; views.push(currentView); renderEditCanvas(); }
 function selectSize(w, h) { pendingBox = {w, h}; }
 function applyAttr(idx, prp, val) { currentView.boxes[idx][prp] = val; refreshUI(idx); }
@@ -178,6 +195,3 @@ function setMode(idx, m) { currentView.boxes[idx].isVar = m; saveAll(); closePop
 function closePop() { const p = document.querySelector('.popup-overlay'); if(p) p.remove(); }
 function deleteBox(i) { currentView.boxes.splice(i,1); saveAll(); closePop(); drawBoxes(); }
 function deleteView(id) { if(confirm("Delete View?")) { views=views.filter(v=>v.createdAt!=id); saveAll(); renderHome(); } }
-function nextSlide() { if (currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } }
-function prevSlide() { if (currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
-function exportData() { const ws = XLSX.utils.json_to_sheet(currentView.data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Data"); XLSX.writeFile(wb, `${currentView.name}_Export.xlsx`); }
