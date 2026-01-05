@@ -224,30 +224,55 @@ function startPresentation() {
 function renderSlide() {
     const app = document.getElementById('app');
     const row = currentView.data[currentRowIndex];
+    
+    // We remove the 'wrapper' class that was fixed/fullscreen
     app.innerHTML = `
-        <div class="presentation-wrapper">
-            <div class="presentation-header">
-                <h3>${currentView.name}</h3>
-                <div style="position: absolute; right: 0; color: var(--slate);">Row ${currentRowIndex + 1} / ${currentView.data.length}</div>
+        <div class="presentation-scroll-container">
+            <div style="width: 100%; max-width: 1100px; display: flex; justify-content: space-between; margin-bottom: 20px;">
+                <h2 style="margin: 0;">${currentView.name}</h2>
+                <div style="color: var(--slate); font-weight: bold;">
+                    Row ${currentRowIndex + 1} of ${currentView.data.length}
+                </div>
             </div>
-            <div class="presentation-canvas-container"><div class="canvas-16-9" id="slide-canvas"></div></div>
-            <div class="presentation-footer">
+
+            <div class="presentation-content">
+                <div class="canvas-16-9" id="slide-canvas"></div>
+            </div>
+
+            <div class="presentation-footer-scroll">
                 <button class="blue-btn" onclick="openMenu('${currentView.createdAt}')">Home</button>
-                <div class="nav-group-right"><button class="blue-btn" onclick="prevSlide()">Previous</button><button class="blue-btn" onclick="nextSlide()">Next</button></div>
+                
+                <div class="nav-group-right">
+                    <button class="blue-btn" onclick="prevSlide()">Previous</button>
+                    <button class="blue-btn" onclick="nextSlide()">Next</button>
+                </div>
             </div>
         </div>
     `;
+
     const canvas = document.getElementById('slide-canvas');
-    currentView.boxes.forEach((box) => {
-        const div = document.createElement('div'); div.className = 'box-instance';
-        div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`;
-        div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`;
-        div.style.background = box.bgColor; div.style.color = box.textColor;
+    currentView.boxes.forEach((box, i) => {
+        const div = document.createElement('div');
+        div.className = 'box-instance';
+        div.style.left = `${(box.x/6)*100}%`;
+        div.style.top = `${(box.y/4)*100}%`;
+        div.style.width = `${(box.w/6)*100}%`;
+        div.style.height = `${(box.h/4)*100}%`;
+        div.style.background = box.bgColor;
+        div.style.color = box.textColor;
+        
+        // Data Mapping (Row to Box)
         const val = box.isVar ? (row[box.textVal] || '---') : box.textVal;
-        div.innerHTML = `<small style="opacity:0.6; font-size:0.6em;">${box.title}</small><div style="font-size:${box.fontSize}px; font-weight:bold;">${val}</div>`;
-        div.onclick = () => openDetailModal(views.indexOf(currentView), val); // Simple wrapper for detail
+        div.innerHTML = `
+            <small style="opacity:0.6; font-size:0.6em;">${box.title}</small>
+            <div style="font-size:${box.fontSize}px; font-weight:bold;">${val}</div>
+        `;
+        div.onclick = () => openDetailModal(i, val);
         canvas.appendChild(div);
     });
+
+    // Automatically scroll to the top of the content when a slide changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function openDetailModal(idx, val) {
     const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
