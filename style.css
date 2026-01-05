@@ -60,6 +60,68 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; t
 }
 .nav-group-right { display: flex; gap: 15px; }
 
+/* --- Presentation Overlay & Icons --- */
+.view-mode-body .app-header { display: none !important; } /* Hide title in new tab */
+.view-mode-body #app { padding: 0; max-width: 100vw !important; height: 100vh; overflow: hidden; }
+
+.presentation-fullscreen {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: #000; /* Cinema background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Floating Controls */
+.floating-controls {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    padding: 15px 30px;
+    border-radius: 50px;
+    z-index: 5000;
+    transition: opacity 0.5s ease, visibility 0.5s;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.floating-controls.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+.icon-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    padding: 10px;
+    transition: transform 0.2s;
+}
+
+.icon-btn:hover { transform: scale(1.2); }
+.icon-btn svg { width: 32px; height: 32px; fill: currentColor; }
+
+/* Scale slide to fit screen */
+.slide-fit {
+    width: 100%;
+    max-height: 100%;
+    aspect-ratio: 16 / 9;
+    background: white;
+    position: relative;
+    box-shadow: 0 0 100px rgba(0,0,0,0.5);
+}
+
 /* Popups & Editor */
 .popup-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 3000; backdrop-filter: blur(4px); }
 .editor-window { background: white; width: 95%; height: 90%; border-radius: 24px; display: flex; padding: 25px; gap: 20px; box-sizing: border-box; overflow: hidden; }
