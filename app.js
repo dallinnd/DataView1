@@ -1,5 +1,5 @@
 /**
- * DATA VIEW - FINAL UNIFIED ENGINE v6.0 (Updated Full Screen)
+ * DATA VIEW - FINAL UNIFIED ENGINE v6.1 (Proportional Fix & Canvas Var Fix)
  */
 
 let views = [];
@@ -21,7 +21,6 @@ function saveAll() {
     localStorage.setItem('dataView_master_final', JSON.stringify(views));
 }
 
-// --- HOME & MENU ---
 function renderHome() {
     const app = document.getElementById('app');
     app.innerHTML = `
@@ -58,7 +57,6 @@ function openMenu(id) {
     `;
 }
 
-// --- CANVAS EDITING ---
 function renderEditCanvas() {
     const app = document.getElementById('app');
     app.innerHTML = `
@@ -94,7 +92,7 @@ function drawGrid() {
             const overlap = currentView.boxes.some(b => x < b.x + b.w && x + pendingBox.w > b.x && y < b.y + b.h && y + pendingBox.h > b.y);
             if(overlap) return alert("Space occupied!");
 
-            currentView.boxes.push({x, y, w:pendingBox.w, h:pendingBox.h, title:'Title', textVal:'Text', isVar:false, bgColor:'#ffffff', textColor:'#000', fontSize:18});
+            currentView.boxes.push({x, y, w:pendingBox.w, h:pendingBox.h, title:'Title', textVal:'Variable', isVar:true, bgColor:'#ffffff', textColor:'#000', fontSize:18});
             pendingBox = null;
             saveAll();
             drawBoxes();
@@ -116,6 +114,7 @@ function drawBoxes() {
         div.style.background = box.bgColor;
         div.style.color = box.textColor;
         
+        // --- FIXED: VARIABLE PREVIEW ON CANVAS ---
         const display = box.isVar ? `<${box.textVal}>` : box.textVal;
         div.innerHTML = `<small style="font-size:0.6em; opacity:0.8; margin-bottom:4px;">${box.title}</small>
                          <div style="font-size:${box.fontSize}px; font-weight:bold;">${display}</div>`;
@@ -124,7 +123,6 @@ function drawBoxes() {
     });
 }
 
-// --- POPUPS & EDITOR ---
 function openChoiceMenu(idx) {
     const overlay = document.createElement('div');
     overlay.className = 'popup-overlay';
@@ -195,7 +193,34 @@ function openEditor(idx) {
     document.body.appendChild(overlay);
 }
 
-// --- PRESENTATION MODE ---
+function updateBoxValue(idx, val) { 
+    currentView.boxes[idx].textVal = val; 
+    refreshUI(idx); 
+    if(currentView.boxes[idx].isVar) { 
+        const ctrls = document.getElementById('ctrls');
+        if(ctrls) ctrls.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
+    } 
+}
+
+function refreshUI(idx) {
+    const box = currentView.boxes[idx];
+    const p = document.getElementById('prev');
+    const t = document.getElementById('prev-txt');
+    if(p) {
+        p.style.background = box.bgColor; 
+        p.style.color = box.textColor;
+        t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal;
+        t.style.fontSize = box.fontSize + 'px';
+        p.querySelector('small').innerText = box.title;
+    }
+    saveAll();
+}
+
+function setMode(idx, m) { 
+    currentView.boxes[idx].isVar = m; 
+    saveAll(); closePop(); openEditor(idx); 
+}
+
 function startPresentation() {
     if (!currentView.data || currentView.data.length === 0) return alert("No data found! Upload Excel first.");
     currentRowIndex = 0;
@@ -280,34 +305,6 @@ function editOnSpot(idx) {
     }
 }
 
-// --- HELPERS ---
-function updateBoxValue(idx, val) { 
-    currentView.boxes[idx].textVal = val; 
-    refreshUI(idx); 
-    if(currentView.boxes[idx].isVar) { 
-        const ctrls = document.getElementById('ctrls');
-        if(ctrls) ctrls.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
-    } 
-}
-function refreshUI(idx) {
-    const box = currentView.boxes[idx];
-    const p = document.getElementById('prev');
-    const t = document.getElementById('prev-txt');
-    if(p) {
-        p.style.background = box.bgColor; p.style.color = box.textColor;
-        t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal;
-        t.style.fontSize = box.fontSize + 'px';
-        p.querySelector('small').innerText = box.title;
-    }
-    saveAll();
-}
-function applyAttr(idx, prp, val) { currentView.boxes[idx][prp] = val; refreshUI(idx); }
-function adjustFont(idx, d) { currentView.boxes[idx].fontSize += d; document.getElementById('sz').innerText = currentView.boxes[idx].fontSize; refreshUI(idx); }
-function setMode(idx, m) { currentView.boxes[idx].isVar = m; closePop(); openEditor(idx); saveAll(); }
-function closePop() { const p = document.querySelector('.popup-overlay'); if(p) p.remove(); }
-function deleteBox(i) { currentView.boxes.splice(i,1); saveAll(); closePop(); drawBoxes(); }
-function deleteView(id) { if(confirm("Delete View?")) { views=views.filter(v=>v.createdAt!=id); saveAll(); renderHome(); } }
-
 function uploadExcel() {
     const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
     input.onchange = (e) => {
@@ -342,6 +339,11 @@ function uploadExcelFromEditor(idx) {
 
 function nextSlide() { if(currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } else { alert("End of data."); renderHome(); } }
 function prevSlide() { if(currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
+function applyAttr(idx, prp, val) { currentView.boxes[idx][prp] = val; refreshUI(idx); }
+function adjustFont(idx, d) { currentView.boxes[idx].fontSize += d; document.getElementById('sz').innerText = currentView.boxes[idx].fontSize; refreshUI(idx); }
+function closePop() { const p = document.querySelector('.popup-overlay'); if(p) p.remove(); }
+function deleteBox(i) { currentView.boxes.splice(i,1); saveAll(); closePop(); drawBoxes(); }
+function deleteView(id) { if(confirm("Delete View?")) { views=views.filter(v=>v.createdAt!=id); saveAll(); renderHome(); } }
 
 function exportData() {
     const ws = XLSX.utils.json_to_sheet(currentView.data);
