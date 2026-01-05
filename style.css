@@ -41,10 +41,42 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; t
 .grid-cell { border: 1px dashed #cbd5e1; box-sizing: border-box; }
 
 /* Boxes */
+/* --- New Box Layout Logic --- */
 .box-instance {
-  position: absolute; z-index: 2; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; text-align: center;
-  border: 2px solid var(--dark); box-sizing: border-box; overflow: hidden;
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  flex-direction: column; /* Stack Title over Content */
+  align-items: center;
+  border: 2px solid var(--dark);
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 10px; /* Add some internal breathing room */
+}
+
+.box-title {
+  width: 100%;
+  text-align: center;
+  font-size: 28px; /* Your requested size */
+  font-weight: 500;
+  opacity: 0.8;
+  margin-bottom: 5px;
+  flex-shrink: 0; /* Don't let the title get squished */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.box-content {
+  flex: 1; /* Take up all remaining vertical space */
+  display: flex;
+  align-items: center; /* Vertical Center */
+  justify-content: center; /* Horizontal Center */
+  width: 100%;
+  text-align: center;
+  font-weight: bold;
+  line-height: 1.1;
+  word-break: break-word;
 }
 
 /* Presentation Mode (Tab-Isolated) */
