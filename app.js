@@ -1,3 +1,7 @@
+/**
+ * DATA VIEW - CONSOLIDATED ENGINE v5.0
+ */
+
 let views = [];
 let currentView = null;
 let pendingBox = null;
@@ -6,12 +10,12 @@ const bgPresets = ['#ffffff','#f1f5f9','#cbd5e1','linear-gradient(135deg,#60a5fa
 const textPresets = ['#000000','#ffffff','#475569','#ef4444','#3b82f6','#10b981'];
 
 document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('dataView_v4');
+    const saved = localStorage.getItem('dataView_v5');
     if (saved) views = JSON.parse(saved);
     renderHome();
 });
 
-function saveAll() { localStorage.setItem('dataView_v4', JSON.stringify(views)); }
+function saveAll() { localStorage.setItem('dataView_v5', JSON.stringify(views)); }
 
 // --- MAIN SCREENS ---
 
@@ -23,16 +27,16 @@ function renderHome() {
         <div id="view-list"></div>
     `;
     const list = document.getElementById('view-list');
-    views.forEach(v => {
+    views.sort((a,b) => b.updatedAt - a.updatedAt).forEach(v => {
         const div = document.createElement('div');
-        div.style = "background:white; padding:18px; border-radius:15px; margin-top:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #e2e8f0;";
+        div.style = "background:white; padding:18px; border-radius:15px; margin-top:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #e2e8f0; box-shadow:0 2px 4px rgba(0,0,0,0.02);";
         div.innerHTML = `<div><strong>${v.name}</strong></div><button class="blue-btn" onclick="openMenu('${v.createdAt}')">Open</button>`;
         list.appendChild(div);
     });
 }
 
 function createNewView() {
-    currentView = { name: 'New View', createdAt: Date.now(), boxes: [], headers: [], data: [], excelName: null };
+    currentView = { name: 'New View', createdAt: Date.now(), updatedAt: Date.now(), boxes: [], headers: [], data: [], excelName: null };
     views.push(currentView);
     renderEditCanvas();
 }
@@ -49,14 +53,14 @@ function renderEditCanvas() {
             <div class="grid-overlay" id="grid"></div>
             <div id="boxes-layer"></div>
         </div>
-        <div style="display:flex; justify-content:center; gap:10px; margin-top:20px;">
+        <div style="display:flex; justify-content:center; gap:10px; margin-top:20px; flex-wrap:wrap;">
             ${['2x2','2x1','4x1','6x1','3x3','4x4'].map(s => `<button class="blue-btn" style="background:#64748b" onclick="selectSize(${s.split('x')[0]},${s.split('x')[1]})">${s}</button>`).join('')}
         </div>
     `;
     drawGrid(); drawBoxes();
 }
 
-// --- CANVAS LOGIC ---
+// --- CANVAS & COLLISION LOGIC ---
 
 function drawGrid() {
     const grid = document.getElementById('grid');
@@ -66,10 +70,11 @@ function drawGrid() {
         cell.className = 'grid-cell';
         const x = i % 6, y = Math.floor(i / 6);
         cell.onclick = () => {
-            if(!pendingBox) return alert("Select a size!");
-            if(x + pendingBox.w > 6 || y + pendingBox.h > 4) return alert("OutOfBounds!");
+            if(!pendingBox) return alert("Select a size first!");
+            if(x + pendingBox.w > 6 || y + pendingBox.h > 4) return alert("Fits outside board!");
             const overlap = currentView.boxes.some(b => x < b.x + b.w && x + pendingBox.w > b.x && y < b.y + b.h && y + pendingBox.h > b.y);
             if(overlap) return alert("Space occupied!");
+
             currentView.boxes.push({x, y, w:pendingBox.w, h:pendingBox.h, title:'Title', textVal:'Text', isVar:false, bgColor:'#ffffff', textColor:'#000', fontSize:18});
             pendingBox = null; saveAll(); drawBoxes();
         };
@@ -87,7 +92,8 @@ function drawBoxes() {
         div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`;
         div.style.background = box.bgColor; div.style.color = box.textColor;
         const display = box.isVar ? `<${box.textVal}>` : box.textVal;
-        div.innerHTML = `<small style="font-size:0.6em; opacity:0.8">${box.title}</small><div style="font-size:${box.fontSize}px; font-weight:bold;">${display}</div>`;
+        div.innerHTML = `<small style="font-size:0.65em; opacity:0.8; margin-bottom:4px;">${box.title}</small>
+                         <div style="font-size:${box.fontSize}px; font-weight:bold;">${display}</div>`;
         div.onclick = (e) => { e.stopPropagation(); openChoiceMenu(i); };
         layer.appendChild(div);
     });
@@ -98,7 +104,7 @@ function openChoiceMenu(idx) {
     overlay.className = 'popup-overlay';
     overlay.innerHTML = `
         <div class="choice-window" style="background:white; padding:25px; border-radius:20px; text-align:center;">
-            <h3>Box Options</h3>
+            <h3 style="margin-top:0">Box Options</h3>
             <button class="primary-btn" onclick="closePop(); openEditor(${idx})">Edit Appearance</button><br><br>
             <button class="primary-btn" style="background:var(--danger)" onclick="deleteBox(${idx})">Delete Box</button><br><br>
             <button class="primary-btn" style="background:var(--slate)" onclick="closePop()">Back</button>
@@ -107,7 +113,7 @@ function openChoiceMenu(idx) {
     document.body.appendChild(overlay);
 }
 
-// --- RIGHT PANEL EDITOR ---
+// --- PROPORTIONAL EDITOR POPUP ---
 
 function openEditor(idx) {
     const box = currentView.boxes[idx];
@@ -115,22 +121,29 @@ function openEditor(idx) {
     overlay.className = 'popup-overlay';
     overlay.id = 'editor-overlay';
 
+    // Calculate Proportional Dimensions
+    const base = 70;
+    const pW = box.w * base;
+    const pH = box.h * base;
+
     const renderTextControl = () => {
-        if (!box.isVar) return `<input type="text" value="${box.textVal}" oninput="updateBoxValue(${idx}, this.value)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">`;
+        if (!box.isVar) return `<input type="text" value="${box.textVal}" oninput="updateBoxValue(${idx}, this.value)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">`;
         if (currentView.headers.length === 0) return `<button class="orange-btn" style="width:100%" onclick="uploadExcelFromEditor(${idx})">Upload Excel</button>`;
         return `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
     };
 
     overlay.innerHTML = `
         <div class="editor-window">
-            <div style="flex:2; display:flex; flex-direction:column; align-items:center; justify-content:center; background:#f1f5f9; border-radius:20px;">
-                <input type="text" value="${box.title}" oninput="currentView.boxes[${idx}].title=this.value; refreshUI(${idx})" style="font-size:1.5rem; text-align:center; font-weight:bold; border:none; background:transparent; border-bottom:2px solid #3b82f6; outline:none; margin-bottom:20px;">
-                <div id="prev" style="width:350px; height:200px; background:${box.bgColor}; color:${box.textColor}; border-radius:12px; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow:0 10px 20px rgba(0,0,0,0.1); border:2px solid #1e293b;">
-                    <small style="opacity:0.7">${box.title}</small>
-                    <div id="prev-txt" style="font-weight:bold; font-size:${box.fontSize}px;">${box.isVar ? '<' + box.textVal + '>' : box.textVal}</div>
+            <div class="editor-preview-area">
+                <input type="text" value="${box.title}" oninput="currentView.boxes[${idx}].title=this.value; refreshUI(${idx})" style="font-size:1.5rem; text-align:center; font-weight:bold; border:none; background:transparent; border-bottom:2px solid #3b82f6; outline:none; margin-bottom:30px; width:80%;">
+                <div id="prev" style="width:${pW}px; height:${pH}px; background:${box.bgColor}; color:${box.textColor}; border-radius:12px;">
+                    <small style="opacity:0.7; font-size:0.8em; margin-bottom:5px;">${box.title}</small>
+                    <div id="prev-txt" style="font-weight:bold; font-size:${box.fontSize}px; text-align:center; padding:0 10px;">
+                        ${box.isVar ? '<' + box.textVal + '>' : box.textVal}
+                    </div>
                 </div>
             </div>
-            <div style="flex:1.2; padding-left:15px; overflow-y:auto;">
+            <div class="editor-controls-area">
                 <div class="property-group">
                     <h4>Coloring</h4>
                     <p><small>Background</small></p>
@@ -166,7 +179,12 @@ function openEditor(idx) {
 function updateBoxValue(idx, val) { 
     currentView.boxes[idx].textVal = val; 
     refreshUI(idx); 
-    if(currentView.boxes[idx].isVar) { closePop(); openEditor(idx); } 
+    if(currentView.boxes[idx].isVar) { 
+        const container = document.getElementById('ctrls');
+        if(container) {
+            container.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
+        }
+    } 
 }
 function refreshUI(idx) {
     const box = currentView.boxes[idx];
@@ -216,12 +234,13 @@ function uploadExcelFromEditor(idx) {
 function selectSize(w, h) { pendingBox = {w, h}; }
 function closePop() { const p = document.querySelector('.popup-overlay'); if(p) p.remove(); }
 function deleteBox(i) { currentView.boxes.splice(i,1); saveAll(); closePop(); drawBoxes(); }
+
 function openMenu(id) {
     currentView = views.find(v => v.createdAt == id);
     document.getElementById('app').innerHTML = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:50px;">
-            <button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="alert('Exporting Spreadsheet...')">Export</button>
-            <button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="alert('Slide Mode Ready')">View</button>
+            <button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="alert('Export Mode Ready')">Export</button>
+            <button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="alert('View Mode Ready')">View</button>
             <button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="renderEditCanvas()">Edit</button>
             <button class="blue-btn" style="height:140px; font-size:1.2rem; background:var(--danger);" onclick="views=views.filter(v=>v.createdAt!=${id}); saveAll(); renderHome();">Delete</button>
         </div>
