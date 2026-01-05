@@ -1,5 +1,7 @@
 /**
- * DATA VIEW - FINAL UNIFIED ENGINE v6.1 (Proportional Fix & Canvas Var Fix)
+ * DATA VIEW - MASTER ENGINE v7.0
+ * Features: 16:9 Edge-to-Edge Grid, Proportional Preview Scaling, 
+ * Full-Screen Slide Mode, and Bracketed Variable Displays.
  */
 
 let views = [];
@@ -21,6 +23,7 @@ function saveAll() {
     localStorage.setItem('dataView_master_final', JSON.stringify(views));
 }
 
+// --- HOME & NAVIGATION ---
 function renderHome() {
     const app = document.getElementById('app');
     app.innerHTML = `
@@ -57,6 +60,7 @@ function openMenu(id) {
     `;
 }
 
+// --- CANVAS EDITING ---
 function renderEditCanvas() {
     const app = document.getElementById('app');
     app.innerHTML = `
@@ -103,6 +107,7 @@ function drawGrid() {
 
 function drawBoxes() {
     const layer = document.getElementById('boxes-layer');
+    if (!layer) return;
     layer.innerHTML = '';
     currentView.boxes.forEach((box, i) => {
         const div = document.createElement('div');
@@ -114,7 +119,7 @@ function drawBoxes() {
         div.style.background = box.bgColor;
         div.style.color = box.textColor;
         
-        // --- FIXED: VARIABLE PREVIEW ON CANVAS ---
+        // --- FIXED: FORCED BRACKET DISPLAY ON CANVAS ---
         const display = box.isVar ? `<${box.textVal}>` : box.textVal;
         div.innerHTML = `<small style="font-size:0.6em; opacity:0.8; margin-bottom:4px;">${box.title}</small>
                          <div style="font-size:${box.fontSize}px; font-weight:bold;">${display}</div>`;
@@ -123,6 +128,7 @@ function drawBoxes() {
     });
 }
 
+// --- POPUPS & EDITOR ---
 function openChoiceMenu(idx) {
     const overlay = document.createElement('div');
     overlay.className = 'popup-overlay';
@@ -152,10 +158,10 @@ function openEditor(idx) {
     overlay.innerHTML = `
         <div class="editor-window">
             <div class="editor-preview-area">
-                <input type="text" value="${box.title}" oninput="currentView.boxes[${idx}].title=this.value; refreshUI(${idx})" style="font-size:1.5rem; text-align:center; font-weight:bold; border:none; background:transparent; border-bottom:2px solid #3b82f6; outline:none; margin-bottom:30px; width:80%;">
+                <input type="text" value="${box.title}" oninput="currentView.boxes[${idx}].title=this.value; refreshUI(${idx})" style="font-size:1.5rem; text-align:center; font-weight:bold; border:none; background:transparent; border-bottom:2px solid #3b82f6; outline:none; margin-bottom:20px; width:100%;">
                 
                 <div id="prev" style="--box-w: ${box.w}; --box-h: ${box.h}; background:${box.bgColor}; color:${box.textColor}; border-radius:12px;">
-                    <small style="opacity:0.7; font-size:0.8em; margin-bottom:10px;">${box.title}</small>
+                    <small style="opacity:0.7; font-size:0.8em; margin-bottom:5px;">${box.title}</small>
                     <div id="prev-txt" style="font-weight:bold; font-size:${box.fontSize}px; text-align:center;">
                         ${box.isVar ? '<' + box.textVal + '>' : box.textVal}
                     </div>
@@ -174,7 +180,7 @@ function openEditor(idx) {
                     <h4>Font Size</h4>
                     <div class="font-controls">
                         <button class="circle-btn" onclick="adjustFont(${idx},-2)">-</button>
-                        <span id="sz">${box.fontSize}</span>
+                        <span id="sz" style="font-weight:bold;">${box.fontSize}</span>
                         <button class="circle-btn" onclick="adjustFont(${idx},2)">+</button>
                     </div>
                 </div>
@@ -193,6 +199,7 @@ function openEditor(idx) {
     document.body.appendChild(overlay);
 }
 
+// --- LIVE PREVIEW HELPERS ---
 function updateBoxValue(idx, val) { 
     currentView.boxes[idx].textVal = val; 
     refreshUI(idx); 
@@ -206,12 +213,13 @@ function refreshUI(idx) {
     const box = currentView.boxes[idx];
     const p = document.getElementById('prev');
     const t = document.getElementById('prev-txt');
-    if(p) {
+    if(p && t) {
         p.style.background = box.bgColor; 
         p.style.color = box.textColor;
         t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal;
         t.style.fontSize = box.fontSize + 'px';
-        p.querySelector('small').innerText = box.title;
+        const small = p.querySelector('small');
+        if(small) small.innerText = box.title;
     }
     saveAll();
 }
@@ -221,6 +229,7 @@ function setMode(idx, m) {
     saveAll(); closePop(); openEditor(idx); 
 }
 
+// --- PRESENTATION MODE (Full Screen Updated) ---
 function startPresentation() {
     if (!currentView.data || currentView.data.length === 0) return alert("No data found! Upload Excel first.");
     currentRowIndex = 0;
@@ -246,6 +255,7 @@ function renderSlide() {
 
             <div class="presentation-footer">
                 <button class="blue-btn" onclick="openMenu('${currentView.createdAt}')">Home</button>
+                
                 <div class="nav-group-right">
                     <button class="blue-btn" onclick="prevSlide()">Previous</button>
                     <button class="blue-btn" onclick="nextSlide()">Next</button>
@@ -305,6 +315,7 @@ function editOnSpot(idx) {
     }
 }
 
+// --- DATA & EXPORT ---
 function uploadExcel() {
     const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
     input.onchange = (e) => {
@@ -337,7 +348,7 @@ function uploadExcelFromEditor(idx) {
     input.click();
 }
 
-function nextSlide() { if(currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } else { alert("End of data."); renderHome(); } }
+function nextSlide() { if(currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } else { alert("End of data reached."); renderHome(); } }
 function prevSlide() { if(currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
 function applyAttr(idx, prp, val) { currentView.boxes[idx][prp] = val; refreshUI(idx); }
 function adjustFont(idx, d) { currentView.boxes[idx].fontSize += d; document.getElementById('sz').innerText = currentView.boxes[idx].fontSize; refreshUI(idx); }
