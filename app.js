@@ -1,7 +1,5 @@
 /**
- * DATA VIEW - FINAL UNIFIED ENGINE v7.0
- * Includes: Right-Panel Editor, Constant/Variable Toggle, Proportional Previews,
- * Bracketed Variable Formatting, and Full Presentation/Export logic.
+ * DATA VIEW - FINAL UNIFIED ENGINE v6.0 (Updated Full Screen)
  */
 
 let views = [];
@@ -73,7 +71,7 @@ function renderEditCanvas() {
             <div class="grid-overlay" id="grid"></div>
             <div id="boxes-layer"></div>
         </div>
-        <div style="display:flex; justify-content:center; gap:10px; margin-top:20px;">
+        <div style="display:flex; justify-content:center; gap:10px; margin-top:20px; flex-wrap:wrap;">
             ${['2x2','2x1','4x1','6x1','3x3','4x4'].map(s => `<button class="blue-btn" style="background:#64748b" onclick="selectSize(${s.split('x')[0]},${s.split('x')[1]})">${s}</button>`).join('')}
         </div>
     `;
@@ -96,12 +94,7 @@ function drawGrid() {
             const overlap = currentView.boxes.some(b => x < b.x + b.w && x + pendingBox.w > b.x && y < b.y + b.h && y + pendingBox.h > b.y);
             if(overlap) return alert("Space occupied!");
 
-            // Default to Variable mode on placement
-            currentView.boxes.push({
-                x, y, w:pendingBox.w, h:pendingBox.h, 
-                title:'Title', textVal:'Select Variable', 
-                isVar: true, bgColor:'#ffffff', textColor:'#000', fontSize:18
-            });
+            currentView.boxes.push({x, y, w:pendingBox.w, h:pendingBox.h, title:'Title', textVal:'Text', isVar:false, bgColor:'#ffffff', textColor:'#000', fontSize:18});
             pendingBox = null;
             saveAll();
             drawBoxes();
@@ -131,7 +124,7 @@ function drawBoxes() {
     });
 }
 
-// --- POPUP CHOICE ---
+// --- POPUPS & EDITOR ---
 function openChoiceMenu(idx) {
     const overlay = document.createElement('div');
     overlay.className = 'popup-overlay';
@@ -146,7 +139,6 @@ function openChoiceMenu(idx) {
     document.body.appendChild(overlay);
 }
 
-// --- PROPORTIONAL EDITOR POPUP ---
 function openEditor(idx) {
     const box = currentView.boxes[idx];
     const overlay = document.createElement('div');
@@ -203,70 +195,6 @@ function openEditor(idx) {
     document.body.appendChild(overlay);
 }
 
-// --- LIVE PREVIEW HELPERS ---
-function updateBoxValue(idx, val) { 
-    currentView.boxes[idx].textVal = val; 
-    refreshUI(idx); 
-    if(currentView.boxes[idx].isVar) { 
-        const ctrls = document.getElementById('ctrls');
-        if(ctrls) ctrls.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
-    } 
-}
-
-function refreshUI(idx) {
-    const box = currentView.boxes[idx];
-    const p = document.getElementById('prev');
-    const t = document.getElementById('prev-txt');
-    if(p) {
-        p.style.background = box.bgColor; 
-        p.style.color = box.textColor;
-        t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal;
-        t.style.fontSize = box.fontSize + 'px';
-        p.querySelector('small').innerText = box.title;
-    }
-    saveAll();
-}
-
-function setMode(idx, m) { 
-    currentView.boxes[idx].isVar = m; 
-    saveAll();
-    closePop(); 
-    openEditor(idx); 
-}
-
-// --- DATA & EXPORT ---
-function uploadExcel() {
-    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
-    input.onchange = (e) => {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            const wb = XLSX.read(evt.target.result, {type:'binary'});
-            const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-            currentView.headers = Object.keys(data[0] || {});
-            currentView.data = data; currentView.excelName = e.target.files[0].name;
-            saveAll(); renderEditCanvas();
-        };
-        reader.readAsBinaryString(e.target.files[0]);
-    };
-    input.click();
-}
-
-function uploadExcelFromEditor(idx) {
-    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
-    input.onchange = (e) => {
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            const wb = XLSX.read(evt.target.result, {type:'binary'});
-            const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-            currentView.headers = Object.keys(data[0] || {});
-            currentView.data = data; currentView.excelName = e.target.files[0].name;
-            saveAll(); closePop(); openEditor(idx);
-        };
-        reader.readAsBinaryString(e.target.files[0]);
-    };
-    input.click();
-}
-
 // --- PRESENTATION MODE ---
 function startPresentation() {
     if (!currentView.data || currentView.data.length === 0) return alert("No data found! Upload Excel first.");
@@ -277,16 +205,27 @@ function startPresentation() {
 function renderSlide() {
     const app = document.getElementById('app');
     const row = currentView.data[currentRowIndex];
+    
     app.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-            <button class="blue-btn" onclick="openMenu('${currentView.createdAt}')">Exit</button>
-            <h3>${currentView.name} - Row ${currentRowIndex + 1}</h3>
-            <div style="color:var(--slate)">${currentRowIndex + 1} / ${currentView.data.length}</div>
-        </div>
-        <div class="canvas-16-9" id="slide-canvas"></div>
-        <div style="display:flex; justify-content:center; gap:20px; margin-top:20px;">
-            <button class="blue-btn" onclick="prevSlide()">Previous</button>
-            <button class="blue-btn" onclick="nextSlide()">Next</button>
+        <div class="presentation-wrapper">
+            <div class="presentation-header">
+                <h3>${currentView.name}</h3>
+                <div style="position: absolute; right: 0; color: var(--slate);">
+                    Row ${currentRowIndex + 1} / ${currentView.data.length}
+                </div>
+            </div>
+
+            <div class="presentation-canvas-container">
+                <div class="canvas-16-9" id="slide-canvas"></div>
+            </div>
+
+            <div class="presentation-footer">
+                <button class="blue-btn" onclick="openMenu('${currentView.createdAt}')">Home</button>
+                <div class="nav-group-right">
+                    <button class="blue-btn" onclick="prevSlide()">Previous</button>
+                    <button class="blue-btn" onclick="nextSlide()">Next</button>
+                </div>
+            </div>
         </div>
     `;
 
@@ -341,20 +280,74 @@ function editOnSpot(idx) {
     }
 }
 
-// --- BUTTON HANDLERS ---
-function nextSlide() { if(currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } else { alert("End of data."); renderHome(); } }
-function prevSlide() { if(currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
+// --- HELPERS ---
+function updateBoxValue(idx, val) { 
+    currentView.boxes[idx].textVal = val; 
+    refreshUI(idx); 
+    if(currentView.boxes[idx].isVar) { 
+        const ctrls = document.getElementById('ctrls');
+        if(ctrls) ctrls.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
+    } 
+}
+function refreshUI(idx) {
+    const box = currentView.boxes[idx];
+    const p = document.getElementById('prev');
+    const t = document.getElementById('prev-txt');
+    if(p) {
+        p.style.background = box.bgColor; p.style.color = box.textColor;
+        t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal;
+        t.style.fontSize = box.fontSize + 'px';
+        p.querySelector('small').innerText = box.title;
+    }
+    saveAll();
+}
 function applyAttr(idx, prp, val) { currentView.boxes[idx][prp] = val; refreshUI(idx); }
 function adjustFont(idx, d) { currentView.boxes[idx].fontSize += d; document.getElementById('sz').innerText = currentView.boxes[idx].fontSize; refreshUI(idx); }
+function setMode(idx, m) { currentView.boxes[idx].isVar = m; closePop(); openEditor(idx); saveAll(); }
 function closePop() { const p = document.querySelector('.popup-overlay'); if(p) p.remove(); }
 function deleteBox(i) { currentView.boxes.splice(i,1); saveAll(); closePop(); drawBoxes(); }
 function deleteView(id) { if(confirm("Delete View?")) { views=views.filter(v=>v.createdAt!=id); saveAll(); renderHome(); } }
 
+function uploadExcel() {
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
+    input.onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const wb = XLSX.read(evt.target.result, {type:'binary'});
+            const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+            currentView.headers = Object.keys(data[0] || {});
+            currentView.data = data; currentView.excelName = e.target.files[0].name;
+            saveAll(); renderEditCanvas();
+        };
+        reader.readAsBinaryString(e.target.files[0]);
+    };
+    input.click();
+}
+
+function uploadExcelFromEditor(idx) {
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
+    input.onchange = (e) => {
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const wb = XLSX.read(evt.target.result, {type:'binary'});
+            const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+            currentView.headers = Object.keys(data[0] || {});
+            currentView.data = data; currentView.excelName = e.target.files[0].name;
+            saveAll(); closePop(); openEditor(idx);
+        };
+        reader.readAsBinaryString(e.target.files[0]);
+    };
+    input.click();
+}
+
+function nextSlide() { if(currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } else { alert("End of data."); renderHome(); } }
+function prevSlide() { if(currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
+
 function exportData() {
     const ws = XLSX.utils.json_to_sheet(currentView.data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, ws, "DataView_Export");
-    XLSX.writeFile(workbook, `${currentView.name}_Export.xlsx`);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DataView_Export");
+    XLSX.writeFile(wb, `${currentView.name}_Export.xlsx`);
     if(changeLog.length > 0) {
         let log = "Change History:\n";
         changeLog.forEach(l => log += `[${l.time}] Row ${l.row}, ${l.col}: ${l.old} -> ${l.new}\n`);
