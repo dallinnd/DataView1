@@ -12,7 +12,7 @@ body { margin: 0; font-family: 'Segoe UI', Roboto, sans-serif; background: var(-
 
 #app { padding: 20px; max-width: 1200px; margin: 0 auto; }
 
-/* Buttons & Header */
+/* Header & General Buttons */
 button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; transition: 0.2s; }
 .primary-btn { background: var(--success); color: white; width: 100%; padding: 16px; font-size: 1.1rem; }
 .orange-btn { background: var(--orange); color: white; padding: 10px 20px; }
@@ -21,17 +21,17 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; t
 .canvas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .header-right { display: flex; gap: 12px; }
 
-/* Canvas & Grid */
+/* Canvas Grid */
 .canvas-16-9 { position: relative; width: 100%; aspect-ratio: 16 / 9; background: white; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; border: 1px solid #cbd5e1; }
 .grid-overlay { display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(4, 1fr); position: absolute; inset: 0; z-index: 1; }
 .grid-cell { border: 1px dashed #cbd5e1; box-sizing: border-box; cursor: crosshair; }
 
-/* Boxes */
+/* Dashboard Boxes */
 .box-instance { position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: center; border: 2px solid var(--dark); box-sizing: border-box; overflow: hidden; padding: 10px; cursor: pointer; }
 .box-title { width: 100%; text-align: center; font-size: 28px; font-weight: 500; opacity: 0.8; margin-bottom: 5px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .box-content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; text-align: center; font-weight: bold; line-height: 1.1; word-break: break-word; }
 
-/* Presentation Mode (Bottom-Left Nav) */
+/* Presentation Navigation (Bottom-Left) */
 .view-mode-body .app-header { display: none !important; }
 .view-mode-body #app { padding: 0; max-width: 100vw !important; height: 100vh; overflow: hidden; }
 .presentation-fullscreen { position: fixed; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; }
@@ -45,10 +45,10 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; t
     border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 .icon-btn { background: transparent; border: none; cursor: pointer; color: white; display: flex; align-items: center; }
-.icon-btn svg { width: 24px; height: 24px; fill: currentColor; }
+.icon-btn svg { width: 22px; height: 22px; fill: currentColor; }
 .slide-counter { color: white; font-weight: bold; font-size: 0.85rem; min-width: 50px; text-align: center; }
 
-/* Popups & Editor */
+/* Popup Editor */
 .popup-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 6000; backdrop-filter: blur(4px); }
 .editor-window { background: white; width: 95%; height: 90%; border-radius: 24px; display: flex; padding: 25px; gap: 20px; box-sizing: border-box; overflow: hidden; }
 .editor-preview-area { flex: 2; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; background: #f1f5f9; border-radius: 20px; padding: 30px; gap: 20px; }
@@ -56,16 +56,46 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; t
 
 .editor-controls-area { flex: 1.2; overflow-y: auto; padding-left: 15px; border-left: 1px solid #eee; }
 .property-group { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+.property-group h4 { margin: 0 0 10px 0; font-size: 0.75rem; color: var(--slate); text-transform: uppercase; letter-spacing: 0.05em; }
 
-.color-grid { display: flex; gap: 8px; overflow-x: auto; padding: 5px 0; }
+/* Color Controls */
+.color-grid { display: flex; gap: 8px; overflow-x: auto; padding: 5px 0; scrollbar-width: none; }
+.color-grid::-webkit-scrollbar { display: none; }
 .circle { min-width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; flex-shrink: 0; transition: 0.2s; }
-.font-controls { display: flex; align-items: center; gap: 15px; }
-.font-btn { width: 44px; height: 44px; flex-shrink: 0; font-size: 1.2rem; background: var(--primary); color: white; border-radius: 10px; }
+.circle:hover { transform: scale(1.1); }
 
+/* Font Buttons */
+.font-controls { display: flex; align-items: center; gap: 15px; }
+.font-btn { width: 44px; height: 44px; flex-shrink: 0; font-size: 1.2rem; background: var(--primary); color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+
+/* Refined Orange Toggle (Segmented Control) */
+.segmented-control {
+    display: flex;
+    background: #f1f5f9;
+    padding: 4px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+}
+.segment-btn {
+    flex: 1;
+    padding: 10px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--slate);
+    transition: 0.3s ease;
+}
+.segment-btn.active {
+    background: white;
+    color: var(--orange);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* Variable Pills */
 .pills-container { display: flex; flex-wrap: wrap; gap: 8px; max-height: 200px; overflow-y: auto; padding: 5px; }
 .var-pill { padding: 8px 16px; background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; font-size: 0.85rem; cursor: pointer; }
 .var-pill.selected { background: var(--orange); color: white; border-color: var(--orange); }
-.mode-btn.active { background: white; color: var(--orange); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
+/* Detail Modal */
 .detail-modal { background: white; width: 85%; max-height: 85%; border-radius: 24px; display: flex; flex-direction: column; padding: 30px; overflow: hidden; }
 .detail-scroll-content { flex: 1; overflow-y: auto; font-size: 2.5rem; font-weight: bold; background: #f8fafc; padding: 25px; border-radius: 15px; margin: 20px 0; word-break: break-word; }
