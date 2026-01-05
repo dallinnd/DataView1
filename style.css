@@ -8,21 +8,15 @@
   --bg-soft: #f8fafc;
 }
 
-body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg-soft); color: var(--dark); overflow-x: hidden; }
+body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-soft); color: var(--dark); overflow-x: hidden; }
 
-/* Branding */
+/* Main Branding */
 .main-heading { text-align: center; font-size: 2.5rem; color: var(--dark); margin: 30px 0 15px 0; font-weight: 800; letter-spacing: -0.02em; }
 
 #app { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
 /* Header Fix */
-.canvas-header { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    margin-bottom: 20px; 
-    width: 100%;
-}
+.canvas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; }
 .header-right { display: flex; gap: 12px; margin-left: auto; }
 
 /* Buttons */
@@ -32,34 +26,30 @@ button { cursor: pointer; border: none; border-radius: 12px; font-weight: 600; t
 .blue-btn { background: var(--primary); color: white; padding: 10px 20px; }
 
 /* Canvas & Grid */
-.canvas-16-9 { position: relative; width: 100%; aspect-ratio: 16 / 9; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: visible; border: 1px solid #cbd5e1; }
+.canvas-16-9 { position: relative; width: 100%; aspect-ratio: 16 / 9; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #cbd5e1; }
 .grid-overlay { display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(4, 1fr); position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .grid-cell { border: 1px dashed #cbd5e1; box-sizing: border-box; }
 
-/* Boxes (15px Rounded) */
+/* Boxes with 15px Rounded Corners */
 .box-instance { 
     position: absolute; z-index: 2; display: flex; flex-direction: column; align-items: center; 
     border: 2px solid var(--dark); border-radius: 15px; box-sizing: border-box; 
     overflow: hidden; padding: 10px; cursor: grab; background: white; 
 }
-.box-instance.dragging { z-index: 9999 !important; cursor: grabbing; opacity: 0.9; box-shadow: 0 20px 40px rgba(0,0,0,0.2); pointer-events: none; }
+.box-instance.dragging { z-index: 9999 !important; cursor: grabbing !important; opacity: 0.9; box-shadow: 0 20px 40px rgba(0,0,0,0.2); pointer-events: none; }
 .box-instance.out-of-bounds { border: 3px solid var(--danger) !important; background: rgba(239, 68, 68, 0.1) !important; }
 
 .box-title { width: 100%; text-align: center; font-size: 28px; font-weight: 500; opacity: 0.8; margin-bottom: 5px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .box-content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; text-align: center; font-weight: bold; line-height: 1.1; word-break: break-word; }
 
-/* Nav Icons (Black) */
-.floating-controls {
-    position: fixed; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 15px;
-    background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); padding: 8px 16px; 
-    border-radius: 40px; z-index: 5000; border: 1px solid rgba(0, 0, 0, 0.15); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-}
-.icon-btn svg { width: 22px; height: 22px; fill: #000 !important; }
-.slide-counter { color: #000; font-weight: bold; font-size: 0.85rem; min-width: 45px; text-align: center; }
+/* Dimension Bar */
+.size-btn { background: #64748b; color: white; padding: 12px 18px; border-radius: 12px; cursor: grab; font-family: monospace; font-size: 1rem; }
 
-/* Large Detail Modal */
-.popup-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9000; backdrop-filter: blur(4px); }
+/* Detail Modal */
 .detail-modal { background: white; width: 92%; height: 88%; border-radius: 24px; display: flex; flex-direction: column; padding: 35px; box-sizing: border-box; }
 .detail-scroll-content { flex: 1; overflow-y: auto; font-size: 3.2rem; font-weight: bold; background: #f8fafc; padding: 40px; border-radius: 20px; margin: 20px 0; line-height: 1.2; word-break: break-word; color: #000; }
 
-.size-btn { background: #64748b; color: white; padding: 12px 18px; border-radius: 12px; cursor: grab; font-family: monospace; font-size: 1rem; }
+/* Nav Icons (Black) */
+.floating-controls { position: fixed; bottom: 20px; left: 20px; display: flex; align-items: center; gap: 15px; background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); padding: 8px 16px; border-radius: 40px; z-index: 5000; border: 1px solid rgba(0, 0, 0, 0.15); }
+.icon-btn svg { width: 22px; height: 22px; fill: #000 !important; }
+.slide-counter { color: #000; font-weight: bold; font-size: 0.85rem; min-width: 45px; text-align: center; }
