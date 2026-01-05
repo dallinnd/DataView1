@@ -121,11 +121,6 @@ function openEditor(idx) {
     overlay.className = 'popup-overlay';
     overlay.id = 'editor-overlay';
 
-    // Calculate Proportional Dimensions
-    const base = 70;
-    const pW = box.w * base;
-    const pH = box.h * base;
-
     const renderTextControl = () => {
         if (!box.isVar) return `<input type="text" value="${box.textVal}" oninput="updateBoxValue(${idx}, this.value)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">`;
         if (currentView.headers.length === 0) return `<button class="orange-btn" style="width:100%" onclick="uploadExcelFromEditor(${idx})">Upload Excel</button>`;
@@ -136,13 +131,15 @@ function openEditor(idx) {
         <div class="editor-window">
             <div class="editor-preview-area">
                 <input type="text" value="${box.title}" oninput="currentView.boxes[${idx}].title=this.value; refreshUI(${idx})" style="font-size:1.5rem; text-align:center; font-weight:bold; border:none; background:transparent; border-bottom:2px solid #3b82f6; outline:none; margin-bottom:30px; width:80%;">
-                <div id="prev" style="width:${pW}px; height:${pH}px; background:${box.bgColor}; color:${box.textColor}; border-radius:12px;">
-                    <small style="opacity:0.7; font-size:0.8em; margin-bottom:5px;">${box.title}</small>
-                    <div id="prev-txt" style="font-weight:bold; font-size:${box.fontSize}px; text-align:center; padding:0 10px;">
+                
+                <div id="prev" style="--box-w: ${box.w}; --box-h: ${box.h}; background:${box.bgColor}; color:${box.textColor}; border-radius:12px;">
+                    <small style="opacity:0.7; font-size:0.8em; margin-bottom:10px;">${box.title}</small>
+                    <div id="prev-txt" style="font-weight:bold; font-size:${box.fontSize}px; text-align:center;">
                         ${box.isVar ? '<' + box.textVal + '>' : box.textVal}
                     </div>
                 </div>
             </div>
+            
             <div class="editor-controls-area">
                 <div class="property-group">
                     <h4>Coloring</h4>
