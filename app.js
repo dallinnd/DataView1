@@ -1,7 +1,7 @@
 /**
- * DATA VIEW - MASTER ENGINE v7.5
- * Default Font Size: 36
- * Layout: Horizontal Color Rows
+ * DATA VIEW - MASTER ENGINE v8.0
+ * Features: Full-Width Scrollable View, Home Button Bottom-Left,
+ * Horizontal Color Rows, and 36pt Default Font.
  */
 
 let views = [];
@@ -25,6 +25,7 @@ function saveAll() {
 
 // --- HOME & MENU ---
 function renderHome() {
+    document.getElementById('app').classList.remove('full-width');
     const app = document.getElementById('app');
     app.innerHTML = `
         <button class="primary-btn" onclick="createNewView()">+ Create New View</button>
@@ -48,6 +49,7 @@ function createNewView() {
 }
 
 function openMenu(id) {
+    document.getElementById('app').classList.remove('full-width');
     currentView = views.find(v => v.createdAt == id);
     document.getElementById('app').innerHTML = `
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:50px;">
@@ -96,7 +98,7 @@ function drawGrid() {
             const overlap = currentView.boxes.some(b => x < b.x + b.w && x + pendingBox.w > b.x && y < b.y + b.h && y + pendingBox.h > b.y);
             if(overlap) return alert("Space occupied!");
 
-            // --- DEFAULT FONT SIZE SET TO 36 ---
+            // Default Font 36 and isVar True
             currentView.boxes.push({x, y, w:pendingBox.w, h:pendingBox.h, title:'Title', textVal:'Variable', isVar:true, bgColor:'#ffffff', textColor:'#000', fontSize:36});
             pendingBox = null;
             saveAll();
@@ -128,6 +130,7 @@ function drawBoxes() {
     });
 }
 
+// --- POPUPS & EDITOR ---
 function openChoiceMenu(idx) {
     const overlay = document.createElement('div');
     overlay.className = 'popup-overlay';
@@ -157,9 +160,9 @@ function openEditor(idx) {
     overlay.innerHTML = `
         <div class="editor-window">
             <div class="editor-preview-area">
-                <input type="text" value="${box.title}" oninput="currentView.boxes[${idx}].title=this.value; refreshUI(${idx})" style="font-size:1.5rem; text-align:center; font-weight:bold; border:none; background:transparent; border-bottom:2px solid #3b82f6; outline:none; margin-bottom:30px; width:100%;">
+                <input type="text" value="${box.title}" oninput="currentView.boxes[${idx}].title=this.value; refreshUI(${idx})" style="font-size:1.5rem; text-align:center; font-weight:bold; border:none; background:transparent; border-bottom:2px solid #3b82f6; outline:none; margin-bottom:20px; width:80%;">
                 <div id="prev" style="--box-w: ${box.w}; --box-h: ${box.h}; background:${box.bgColor}; color:${box.textColor}; border-radius:12px;">
-                    <small style="opacity:0.7; font-size:0.8em; margin-bottom:10px;">${box.title}</small>
+                    <small style="opacity:0.7; font-size:0.8em; margin-bottom:5px;">${box.title}</small>
                     <div id="prev-txt" style="font-weight:bold; font-size:${box.fontSize}px; text-align:center;">
                         ${box.isVar ? '<' + box.textVal + '>' : box.textVal}
                     </div>
@@ -168,9 +171,9 @@ function openEditor(idx) {
             <div class="editor-controls-area">
                 <div class="property-group">
                     <h4>Coloring</h4>
-                    <p><small>Background</small></p>
+                    <p><small>Background Row</small></p>
                     <div class="color-grid">${bgPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'bgColor','${c}')"></div>`).join('')}</div>
-                    <p style="margin-top:15px;"><small>Text Color</small></p>
+                    <p style="margin-top:10px;"><small>Text Color Row</small></p>
                     <div class="color-grid">${textPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'textColor','${c}')"></div>`).join('')}</div>
                 </div>
                 <div class="property-group">
@@ -182,7 +185,7 @@ function openEditor(idx) {
                     </div>
                 </div>
                 <div class="property-group">
-                    <h4>Content</h4>
+                    <h4>Content Source</h4>
                     <div class="mode-toggle">
                         <button class="mode-btn ${!box.isVar ? 'active' : ''}" onclick="setMode(${idx},false)">Constant</button>
                         <button class="mode-btn ${box.isVar ? 'active' : ''}" onclick="setMode(${idx},true)">Variable</button>
@@ -196,43 +199,23 @@ function openEditor(idx) {
     document.body.appendChild(overlay);
 }
 
-// --- LOGIC HELPERS ---
-function updateBoxValue(idx, val) { 
-    currentView.boxes[idx].textVal = val; 
-    refreshUI(idx); 
-    if(currentView.boxes[idx].isVar) { 
-        const ctrls = document.getElementById('ctrls');
-        if(ctrls) ctrls.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
-    } 
-}
-function refreshUI(idx) {
-    const box = currentView.boxes[idx];
-    const p = document.getElementById('prev');
-    const t = document.getElementById('prev-txt');
-    if(p && t) {
-        p.style.background = box.bgColor; p.style.color = box.textColor;
-        t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal;
-        t.style.fontSize = box.fontSize + 'px';
-        const sm = p.querySelector('small'); if(sm) sm.innerText = box.title;
-    }
-    saveAll();
-}
+// --- PRESENTATION MODE (Full Width & Scrollable) ---
 function startPresentation() {
-    if (!currentView.data || currentView.data.length === 0) return alert("No data found!");
-    currentRowIndex = 0; renderSlide();
+    if (!currentView.data || currentView.data.length === 0) return alert("Upload Excel first!");
+    currentRowIndex = 0;
+    renderSlide();
 }
+
 function renderSlide() {
     const app = document.getElementById('app');
     const row = currentView.data[currentRowIndex];
+    app.classList.add('full-width');
     
-    // We remove the 'wrapper' class that was fixed/fullscreen
     app.innerHTML = `
         <div class="presentation-scroll-container">
-            <div style="width: 100%; max-width: 1100px; display: flex; justify-content: space-between; margin-bottom: 20px;">
+            <div style="width: 100%; padding: 20px 40px; display: flex; justify-content: space-between; box-sizing: border-box;">
                 <h2 style="margin: 0;">${currentView.name}</h2>
-                <div style="color: var(--slate); font-weight: bold;">
-                    Row ${currentRowIndex + 1} of ${currentView.data.length}
-                </div>
+                <div style="color: var(--slate); font-weight: bold; font-size: 1.2rem;">Row ${currentRowIndex + 1} / ${currentView.data.length}</div>
             </div>
 
             <div class="presentation-content">
@@ -241,7 +224,6 @@ function renderSlide() {
 
             <div class="presentation-footer-scroll">
                 <button class="blue-btn" onclick="openMenu('${currentView.createdAt}')">Home</button>
-                
                 <div class="nav-group-right">
                     <button class="blue-btn" onclick="prevSlide()">Previous</button>
                     <button class="blue-btn" onclick="nextSlide()">Next</button>
@@ -261,29 +243,67 @@ function renderSlide() {
         div.style.background = box.bgColor;
         div.style.color = box.textColor;
         
-        // Data Mapping (Row to Box)
         const val = box.isVar ? (row[box.textVal] || '---') : box.textVal;
-        div.innerHTML = `
-            <small style="opacity:0.6; font-size:0.6em;">${box.title}</small>
-            <div style="font-size:${box.fontSize}px; font-weight:bold;">${val}</div>
-        `;
+        div.innerHTML = `<small style="opacity:0.6; font-size:0.6em;">${box.title}</small>
+                         <div style="font-size:${box.fontSize}px; font-weight:bold;">${val}</div>`;
         div.onclick = () => openDetailModal(i, val);
         canvas.appendChild(div);
     });
-
-    // Automatically scroll to the top of the content when a slide changes
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 function openDetailModal(idx, val) {
-    const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
+    const box = currentView.boxes[idx];
+    const overlay = document.createElement('div');
+    overlay.className = 'popup-overlay';
     overlay.innerHTML = `
-        <div class="detail-modal" style="background:white; width:90%; height:90%; border-radius:24px; display:flex; flex-direction:column; padding:30px;">
-            <div style="display:flex; justify-content:space-between;"><h2>Detail</h2><div style="font-size:2rem; cursor:pointer;" onclick="closePop()">✕</div></div>
+        <div class="detail-modal" style="background:white; width:90%; height:90%; border-radius:24px; display:flex; flex-direction:column; padding:30px; box-shadow:0 10px 50px rgba(0,0,0,0.5);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h2>${box.title}</h2>
+                <div style="font-size:2rem; cursor:pointer;" onclick="closePop()">✕</div>
+            </div>
             <div style="flex:1; overflow-y:auto; font-size:3rem; font-weight:bold; background:#f8fafc; padding:20px; border-radius:15px; margin:20px 0;">${val}</div>
-            <button class="blue-btn" onclick="closePop()">Close</button>
+            <div style="display:flex; gap:10px;">
+                <button class="primary-btn" style="width:auto; padding:15px 30px;" onclick="editOnSpot(${idx})">Edit Value</button>
+                <button class="blue-btn" onclick="closePop()">Close</button>
+            </div>
         </div>
     `;
     document.body.appendChild(overlay);
+}
+
+function editOnSpot(idx) {
+    const box = currentView.boxes[idx];
+    if(!box.isVar) return alert("Only Variables can be edited.");
+    const oldVal = currentView.data[currentRowIndex][box.textVal];
+    const newVal = prompt("Edit Value:", oldVal);
+    if(newVal !== null && newVal !== oldVal) {
+        currentView.data[currentRowIndex][box.textVal] = newVal;
+        changeLog.push({ time: new Date().toLocaleString(), row: currentRowIndex+1, col: box.textVal, old: oldVal, new: newVal });
+        saveAll(); closePop(); renderSlide();
+    }
+}
+
+// --- DATA HELPERS ---
+function updateBoxValue(idx, val) { 
+    currentView.boxes[idx].textVal = val; 
+    refreshUI(idx); 
+    if(currentView.boxes[idx].isVar) { 
+        const ctrls = document.getElementById('ctrls');
+        if(ctrls) ctrls.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
+    } 
+}
+function refreshUI(idx) {
+    const box = currentView.boxes[idx];
+    const p = document.getElementById('prev');
+    const t = document.getElementById('prev-txt');
+    if(p && t) {
+        p.style.background = box.bgColor; p.style.color = box.textColor;
+        t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal;
+        t.style.fontSize = box.fontSize + 'px';
+        const s = p.querySelector('small'); if(s) s.innerText = box.title;
+    }
+    saveAll();
 }
 function uploadExcel() {
     const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
@@ -300,6 +320,7 @@ function uploadExcel() {
     };
     input.click();
 }
+
 function uploadExcelFromEditor(idx) {
     const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
     input.onchange = (e) => {
@@ -315,6 +336,7 @@ function uploadExcelFromEditor(idx) {
     };
     input.click();
 }
+
 function applyAttr(idx, prp, val) { currentView.boxes[idx][prp] = val; refreshUI(idx); }
 function adjustFont(idx, d) { currentView.boxes[idx].fontSize += d; document.getElementById('sz').innerText = currentView.boxes[idx].fontSize; refreshUI(idx); }
 function setMode(idx, m) { currentView.boxes[idx].isVar = m; closePop(); openEditor(idx); saveAll(); }
@@ -323,8 +345,16 @@ function deleteBox(i) { currentView.boxes.splice(i,1); saveAll(); closePop(); dr
 function deleteView(id) { if(confirm("Delete View?")) { views=views.filter(v=>v.createdAt!=id); saveAll(); renderHome(); } }
 function nextSlide() { if(currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } else { alert("End of data."); renderHome(); } }
 function prevSlide() { if(currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
+
 function exportData() {
     const ws = XLSX.utils.json_to_sheet(currentView.data);
-    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Data");
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DataView_Export");
     XLSX.writeFile(wb, `${currentView.name}_Export.xlsx`);
+    if(changeLog.length > 0) {
+        let log = "Change History:\n";
+        changeLog.forEach(l => log += `[${l.time}] Row ${l.row}, ${l.col}: ${l.old} -> ${l.new}\n`);
+        const blob = new Blob([log], {type:'text/plain'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${currentView.name}_changes.log`; a.click();
+    }
 }
