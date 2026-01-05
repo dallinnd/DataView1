@@ -1,12 +1,13 @@
 /**
- * DATA VIEW - MASTER ENGINE v12.0
- * Fixed: Horizontal Choice Menu, Preview Scaling, 28px Titles, 40% Transparent Nav.
+ * DATA VIEW - MASTER ENGINE v13.0
+ * Fixed: 3s Auto-Hide Timer, Orange Active States, Variable Pills, Editor Upload.
  */
 
 let views = [];
 let currentView = null;
 let pendingBox = null;
 let currentRowIndex = 0;
+let changeLog = [];
 let hideTimer;
 
 const iconHome = `<svg viewBox="0 0 24 24" width="28" height="28"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white"/></svg>`;
@@ -18,7 +19,7 @@ const textPresets = ['#000000','#ffffff','#475569','#ef4444','#3b82f6','#10b981'
 
 // --- INIT ---
 document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('dataView_v12');
+    const saved = localStorage.getItem('dataView_v12'); // Main storage key
     if (saved) views = JSON.parse(saved);
     const params = new URLSearchParams(window.location.search);
     if (params.get('view')) {
@@ -89,27 +90,24 @@ function drawBoxes() {
     });
 }
 
-// --- POPUPS & EDITOR ---
-function openChoiceMenu(idx) {
-    const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
-    overlay.innerHTML = `
-        <div class="choice-window">
-            <h3>Box Options</h3>
-            <div class="choice-btn-group">
-                <button class="blue-btn" onclick="closePop(); openEditor(${idx})">Edit</button>
-                <button class="primary-btn" style="background:var(--danger)" onclick="deleteBox(${idx})">Delete</button>
-                <button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Back</button>
-            </div>
-        </div>`;
-    document.body.appendChild(overlay);
-}
+// --- EDITOR & PILLS ---
+
 
 function openEditor(idx) {
     const box = currentView.boxes[idx]; const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
-    const renderCtrls = () => {
-        if (!box.isVar) return `<input type="text" value="${box.textVal}" oninput="updateBoxValue(${idx}, this.value)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">`;
+    
+    const renderContentCtrls = () => {
+        if (!box.isVar) {
+            return `<input type="text" value="${box.textVal}" oninput="updateBoxValue(${idx}, this.value)" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">`;
+        }
+        // If variable mode but no Excel uploaded
+        if (!currentView.headers || currentView.headers.length === 0) {
+            return `<button class="orange-btn" style="width:100%" onclick="uploadExcelFromEditor(${idx})">Upload Excel to see Variables</button>`;
+        }
+        // If Excel is there, show PILLS
         return `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
     };
+
     overlay.innerHTML = `
         <div class="editor-window">
             <div class="editor-preview-area">
@@ -122,14 +120,14 @@ function openEditor(idx) {
             <div class="editor-controls-area">
                 <div class="property-group"><h4>Coloring</h4><p><small>BG Line</small></p><div class="color-grid">${bgPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'bgColor','${c}')"></div>`).join('')}</div><p style="margin-top:15px;"><small>Text Line</small></p><div class="color-grid">${textPresets.map(c => `<div class="circle" style="background:${c}" onclick="applyAttr(${idx},'textColor','${c}')"></div>`).join('')}</div></div>
                 <div class="property-group"><h4>Font Size</h4><div class="font-controls"><button class="circle-btn" onclick="adjustFont(${idx},-2)">-</button><span id="sz" style="font-weight:bold;">${box.fontSize}</span><button class="circle-btn" onclick="adjustFont(${idx},2)">+</button></div></div>
-                <div class="property-group"><h4>Content</h4><div class="mode-toggle"><button class="mode-btn ${!box.isVar ? 'active' : ''}" onclick="setMode(${idx},false)">Constant</button><button class="mode-btn ${box.isVar ? 'active' : ''}" onclick="setMode(${idx},true)">Variable</button></div><div id="ctrls">${renderCtrls()}</div></div>
+                <div class="property-group"><h4>Content Mode</h4><div class="mode-toggle"><button class="mode-btn ${!box.isVar ? 'active' : ''}" onclick="setMode(${idx},false)">Constant</button><button class="mode-btn ${box.isVar ? 'active' : ''}" onclick="setMode(${idx},true)">Variable</button></div><div id="ctrls">${renderContentCtrls()}</div></div>
                 <button class="primary-btn" onclick="closePop(); drawBoxes();">Save Box</button>
             </div>
         </div>`;
     document.body.appendChild(overlay);
 }
 
-// --- PRESENTATION ---
+// --- PRESENTATION (3s Fixed Timer) ---
 function startPresentation() {
     currentRowIndex = 0; renderSlide(); setupAutoHide();
     window.addEventListener('keydown', (e) => { 
@@ -148,24 +146,31 @@ function renderSlide() {
         div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`;
         div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`;
         div.style.background = box.bgColor; div.style.color = box.textColor;
-        const val = box.isVar ? (row[box.textVal] || '---') : box.textVal;
-        div.innerHTML = `<div class="box-title">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${val}</div>`;
+        div.innerHTML = `<div class="box-title">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${box.isVar ? (row[box.textVal] || '---') : box.textVal}</div>`;
         canvas.appendChild(div);
     });
 }
 
 function setupAutoHide() {
     const ctrls = document.getElementById('controls'); if (!ctrls) return;
-    const reset = () => { ctrls.classList.remove('hidden'); document.body.style.cursor = 'default'; clearTimeout(hideTimer); hideTimer = setTimeout(() => { if (!ctrls.matches(':hover')) { ctrls.classList.add('hidden'); document.body.style.cursor = 'none'; } }, 5000); };
+    const reset = () => { 
+        ctrls.classList.remove('hidden'); document.body.style.cursor = 'default'; 
+        clearTimeout(hideTimer); 
+        hideTimer = setTimeout(() => { if (!ctrls.matches(':hover')) { ctrls.classList.add('hidden'); document.body.style.cursor = 'none'; } }, 3000); // 3 SECONDS
+    };
     window.addEventListener('mousemove', reset); window.addEventListener('click', reset);
     ctrls.addEventListener('mouseenter', () => { clearTimeout(hideTimer); ctrls.classList.remove('hidden'); });
     ctrls.addEventListener('mouseleave', reset); reset();
 }
 
-// --- UTILS ---
+// --- HELPERS ---
 function updateBoxValue(idx, val) { 
     currentView.boxes[idx].textVal = val; refreshUI(idx); 
-    if(currentView.boxes[idx].isVar) { const c = document.getElementById('ctrls'); if(c) c.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`; }
+    // Re-render pills inside editor
+    const c = document.getElementById('ctrls'); 
+    if(c && currentView.boxes[idx].isVar && currentView.headers.length > 0) {
+        c.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
+    }
 }
 function refreshUI(idx) {
     const box = currentView.boxes[idx]; const p = document.getElementById('prev'); const t = document.getElementById('prev-txt');
@@ -175,6 +180,11 @@ function refreshUI(idx) {
 function uploadExcel() {
     const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
     input.onchange = (e) => { const reader = new FileReader(); reader.onload = (evt) => { const wb = XLSX.read(evt.target.result, {type:'binary'}); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); currentView.headers = Object.keys(data[0] || {}); currentView.data = data; saveAll(); renderEditCanvas(); }; reader.readAsBinaryString(e.target.files[0]); };
+    input.click();
+}
+function uploadExcelFromEditor(idx) {
+    const input = document.createElement('input'); input.type = 'file'; input.accept = '.xlsx,.xls';
+    input.onchange = (e) => { const reader = new FileReader(); reader.onload = (evt) => { const wb = XLSX.read(evt.target.result, {type:'binary'}); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); currentView.headers = Object.keys(data[0] || {}); currentView.data = data; saveAll(); closePop(); openEditor(idx); }; reader.readAsBinaryString(e.target.files[0]); };
     input.click();
 }
 function applyAttr(idx, prp, val) { currentView.boxes[idx][prp] = val; refreshUI(idx); }
@@ -187,6 +197,11 @@ function nextSlide() { if (currentRowIndex < currentView.data.length - 1) { curr
 function prevSlide() { if (currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
 function selectSize(w, h) { pendingBox = {w, h}; }
 function createNewView() { currentView = { name: 'New View', createdAt: Date.now(), updatedAt: Date.now(), boxes: [], headers: [], data: [] }; views.push(currentView); renderEditCanvas(); }
+function openChoiceMenu(idx) {
+    const overlay = document.createElement('div'); overlay.className = 'popup-overlay';
+    overlay.innerHTML = `<div class="choice-window"><h3>Box Options</h3><div class="choice-btn-group"><button class="blue-btn" onclick="closePop(); openEditor(${idx})">Edit</button><button class="primary-btn" style="background:var(--danger)" onclick="deleteBox(${idx})">Delete</button><button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Back</button></div></div>`;
+    document.body.appendChild(overlay);
+}
 function exportData() {
     const ws = XLSX.utils.json_to_sheet(currentView.data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Data");
     XLSX.writeFile(wb, `${currentView.name}_Export.xlsx`);
