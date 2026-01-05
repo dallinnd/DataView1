@@ -33,9 +33,9 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; t
 /* Canvas & Grid */
 .canvas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .canvas-16-9 {
-  position: relative; width: 100%; aspect-ratio: 16 / 9;
-  background: white; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-  overflow: hidden; border: 1px solid #cbd5e1;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
 }
 .grid-overlay {
   display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(4, 1fr);
@@ -116,3 +116,36 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; t
 .mode-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 .font-controls { display: flex; align-items: center; gap: 15px; }
 .circle-btn { width: 32px; height: 32px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+
+/* --- Scrollable Presentation Layout --- */
+.presentation-scroll-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding-top: 20px;
+  /* This ensures the page has enough height to scroll if the screen is small */
+  min-height: 100vh; 
+}
+
+.presentation-content {
+  width: 100%;
+  max-width: 1100px;
+  margin-bottom: 50px; /* Space before the buttons */
+}
+
+.presentation-footer-scroll {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1100px;
+  padding: 40px 0;
+  border-top: 1px solid #e2e8f0;
+  margin-top: auto; /* Pushes to bottom of container */
+}
+
+.nav-group-right {
+  display: flex;
+  gap: 15px;
+}
