@@ -33,9 +33,9 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; t
 /* Canvas & Grid */
 .canvas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
 .canvas-16-9 {
-  width: 100%;
-  height: auto;
-  aspect-ratio: 16 / 9;
+  position: relative; width: 100%; aspect-ratio: 16 / 9;
+  background: white; border-radius: 4px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  overflow: hidden; border: 1px solid #cbd5e1;
 }
 .grid-overlay {
   display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(4, 1fr);
