@@ -1,6 +1,7 @@
 /**
- * DATA VIEW - FINAL UNIFIED ENGINE v6.0
- * Fixed: Variable Preview in Carrots and Live Canvas Sync
+ * DATA VIEW - FINAL UNIFIED ENGINE v7.0
+ * Includes: Right-Panel Editor, Constant/Variable Toggle, Proportional Previews,
+ * Bracketed Variable Formatting, and Full Presentation/Export logic.
  */
 
 let views = [];
@@ -95,7 +96,12 @@ function drawGrid() {
             const overlap = currentView.boxes.some(b => x < b.x + b.w && x + pendingBox.w > b.x && y < b.y + b.h && y + pendingBox.h > b.y);
             if(overlap) return alert("Space occupied!");
 
-            currentView.boxes.push({x, y, w:pendingBox.w, h:pendingBox.h, title:'Title', textVal:'Text', isVar:false, bgColor:'#ffffff', textColor:'#000', fontSize:18});
+            // Default to Variable mode on placement
+            currentView.boxes.push({
+                x, y, w:pendingBox.w, h:pendingBox.h, 
+                title:'Title', textVal:'Select Variable', 
+                isVar: true, bgColor:'#ffffff', textColor:'#000', fontSize:18
+            });
             pendingBox = null;
             saveAll();
             drawBoxes();
@@ -117,7 +123,6 @@ function drawBoxes() {
         div.style.background = box.bgColor;
         div.style.color = box.textColor;
         
-        // Formatting for Canvas
         const display = box.isVar ? `<${box.textVal}>` : box.textVal;
         div.innerHTML = `<small style="font-size:0.6em; opacity:0.8; margin-bottom:4px;">${box.title}</small>
                          <div style="font-size:${box.fontSize}px; font-weight:bold;">${display}</div>`;
@@ -141,7 +146,7 @@ function openChoiceMenu(idx) {
     document.body.appendChild(overlay);
 }
 
-// --- MAIN EDITOR POPUP ---
+// --- PROPORTIONAL EDITOR POPUP ---
 function openEditor(idx) {
     const box = currentView.boxes[idx];
     const overlay = document.createElement('div');
@@ -202,7 +207,6 @@ function openEditor(idx) {
 function updateBoxValue(idx, val) { 
     currentView.boxes[idx].textVal = val; 
     refreshUI(idx); 
-    // If it's a variable pill click, we re-render the controls to update the 'selected' pill color
     if(currentView.boxes[idx].isVar) { 
         const ctrls = document.getElementById('ctrls');
         if(ctrls) ctrls.innerHTML = `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${currentView.boxes[idx].textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
@@ -216,7 +220,6 @@ function refreshUI(idx) {
     if(p) {
         p.style.background = box.bgColor; 
         p.style.color = box.textColor;
-        // Formatting for Live Editor Preview
         t.innerText = box.isVar ? `<${box.textVal}>` : box.textVal;
         t.style.fontSize = box.fontSize + 'px';
         p.querySelector('small').innerText = box.title;
@@ -298,7 +301,6 @@ function renderSlide() {
         div.style.background = box.bgColor;
         div.style.color = box.textColor;
         
-        // Data Mapping (Row to Box)
         const val = box.isVar ? (row[box.textVal] || '---') : box.textVal;
         div.innerHTML = `<small style="opacity:0.6; font-size:0.6em;">${box.title}</small>
                          <div style="font-size:${box.fontSize}px; font-weight:bold;">${val}</div>`;
@@ -350,9 +352,9 @@ function deleteView(id) { if(confirm("Delete View?")) { views=views.filter(v=>v.
 
 function exportData() {
     const ws = XLSX.utils.json_to_sheet(currentView.data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "DataView_Export");
-    XLSX.writeFile(wb, `${currentView.name}_Export.xlsx`);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, ws, "DataView_Export");
+    XLSX.writeFile(workbook, `${currentView.name}_Export.xlsx`);
     if(changeLog.length > 0) {
         let log = "Change History:\n";
         changeLog.forEach(l => log += `[${l.time}] Row ${l.row}, ${l.col}: ${l.old} -> ${l.new}\n`);
