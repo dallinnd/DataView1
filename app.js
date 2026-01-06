@@ -1,5 +1,6 @@
 /**
- * DATA VIEW PRO - INTEGRATED MASTER ENGINE v56.0
+ * DATA VIEW PRO - MASTER ENGINE v56.0
+ * Verified Data Persistence & Home Search
  */
 
 let views = [];
@@ -7,6 +8,7 @@ let currentView = null;
 let currentRowIndex = 0;
 let selectedBoxIdx = null;
 let varSearchTerm = ""; 
+let viewSearchTerm = ""; // Search for Home screen
 
 let draggingElement = null;
 let dragIdx = -1;
@@ -20,9 +22,9 @@ const iconHome = `<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 
 const iconLeft = `<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
 const iconRight = `<svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`;
 
-// --- PERSISTENCE ---
+// --- STARTUP ---
 document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('dataView_master_final');
+    const saved = localStorage.getItem('dataView_master_v56');
     if (saved) views = JSON.parse(saved);
     
     const params = new URLSearchParams(window.location.search);
@@ -34,20 +36,42 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function triggerSave() {
-    localStorage.setItem('dataView_master_final', JSON.stringify(views));
+    localStorage.setItem('dataView_master_v56', JSON.stringify(views));
     const badge = document.getElementById('save-badge');
     if (badge) { badge.style.opacity = "1"; setTimeout(() => badge.style.opacity = "0", 1200); }
 }
 
-// --- MENUS ---
+// --- HOME & SEARCH ---
 function renderHome() {
     selectedBoxIdx = null;
     const app = document.getElementById('app');
-    app.innerHTML = `<div class="home-container"><h1 class="main-heading">Data View</h1><button class="primary-btn" onclick="createNewView()">+ Create New View</button><div id="view-list" style="margin-top:40px;"></div></div>`;
-    views.forEach(v => {
+    app.innerHTML = `
+        <div class="home-container">
+            <h1 class="main-heading">Data View</h1>
+            <button class="primary-btn" onclick="createNewView()">+ Create New View</button>
+            <div style="margin-top:30px;">
+                <input type="text" placeholder="Search saved views..." value="${viewSearchTerm}" oninput="handleViewSearch(this.value)">
+            </div>
+            <div id="view-list" style="margin-top:20px;"></div>
+        </div>`;
+    updateViewList();
+}
+
+function handleViewSearch(val) {
+    viewSearchTerm = val;
+    updateViewList();
+}
+
+function updateViewList() {
+    const list = document.getElementById('view-list');
+    if (!list) return;
+    list.innerHTML = '';
+    const filtered = views.filter(v => v.name.toLowerCase().includes(viewSearchTerm.toLowerCase()));
+    
+    filtered.forEach(v => {
         const d = document.createElement('div'); d.className = 'view-card';
-        d.innerHTML = `<strong>${v.name}</strong><button class="blue-btn" onclick="openMenu('${v.createdAt}')">Open View</button>`;
-        document.getElementById('view-list').appendChild(d);
+        d.innerHTML = `<strong>${v.name}</strong><button class="blue-btn" onclick="openMenu('${v.createdAt}')">Open Dashboard</button>`;
+        list.appendChild(d);
     });
 }
 
@@ -62,7 +86,7 @@ function openPresentationTab(id) { window.open(window.location.origin + window.l
 // --- SIDEBAR EDITOR ---
 function renderEditCanvas() {
     const app = document.getElementById('app');
-    app.innerHTML = `<div class="main-content"><aside class="editor-sidebar" id="sidebar">${renderSidebarContent()}</aside><main class="canvas-area"><div class="canvas-16-9" id="canvas-container" style="background:${currentView.canvasBg || '#ffffff'}"><div class="grid-overlay"></div><div id="boxes-layer"></div></div><button class="blue-btn" style="margin-top:30px; width:100%; max-width:300px;" onclick="openMenu('${currentView.createdAt}')">Save & Exit</button></main></div>`;
+    app.innerHTML = `<div class="main-content"><aside class="editor-sidebar" id="sidebar">${renderSidebarContent()}</aside><main class="canvas-area"><div class="canvas-16-9" id="canvas-container" style="background:${currentView.canvasBg || '#ffffff'}"><div class="grid-overlay"></div><div id="boxes-layer"></div></div><button class="blue-btn" style="margin-top:30px; width:100%; max-width:300px; font-size:1rem;" onclick="openMenu('${currentView.createdAt}')">Save & Exit</button></main></div>`;
     drawBoxes();
 }
 
@@ -89,7 +113,7 @@ function renderBoxControls() {
     return `<div class="property-group"><h4>Label</h4><input type="text" value="${box.title}" oninput="syncBoxAttr(${selectedBoxIdx}, 'title', this.value)"></div><div class="property-group"><h4>Mode</h4><select onchange="setBoxMode(${selectedBoxIdx}, this.value === 'var')"><option value="const" ${!box.isVar ? 'selected' : ''}>Static</option><option value="var" ${box.isVar ? 'selected' : ''}>Variable</option></select></div><div class="property-group"><h4>Content</h4>${contentSection}</div><div class="property-group"><h4>Appearance</h4><div class="color-grid">${bgPresets.map(c => `<div class="circle" style="background:${c}" onclick="syncBoxAttr(${selectedBoxIdx}, 'bgColor', '${c}')"></div>`).join('')}</div><p style="margin-top:10px; font-size:0.7rem;">Text Color</p><div class="color-grid">${textPresets.map(c => `<div class="circle" style="background:${c}" onclick="syncBoxAttr(${selectedBoxIdx}, 'textColor', '${c}')"></div>`).join('')}</div><div style="display:flex; align-items:center; gap:10px; margin-top:20px;"><button class="blue-btn" style="padding:8px 15px;" onclick="syncBoxAttr(${selectedBoxIdx}, 'fontSize', ${box.fontSize - 4})">-</button><span>${box.fontSize}px</span><button class="blue-btn" style="padding:8px 15px;" onclick="syncBoxAttr(${selectedBoxIdx}, 'fontSize', ${box.fontSize + 4})">+</button></div></div><button class="danger-btn" style="width:100%;" onclick="deleteBox(${selectedBoxIdx})">Delete Box</button>`;
 }
 
-// --- CORE RENDERING ---
+// --- RENDER DESIGN CANVAS ---
 function addNewBoxDirectly(w, h) {
     const hasH = currentView.headers && currentView.headers.length > 0;
     currentView.boxes.push({ x: 0, y: 0, w: parseInt(w), h: parseInt(h), title: 'Label', textVal: hasH ? currentView.headers[0] : 'Value', isVar: hasH, bgColor: 'var(--light-grey)', textColor: '#000', fontSize: 24 });
@@ -103,17 +127,13 @@ function drawBoxes() {
         const div = document.createElement('div');
         div.className = `box-instance ${selectedBoxIdx === i ? 'selected-box' : ''}`;
         div.style.cssText = `left:${(box.x/6)*100}%; top:${(box.y/4)*100}%; --w-pct:${(box.w/6)*100}%; --h-pct:${(box.h/4)*100}%; background:${box.bgColor || 'var(--light-grey)'}; color:${box.textColor || 'black'};`;
-        
-        // Use Variable Name in Carrots for डिजाइन
-        const displayVal = box.isVar ? `<${box.textVal}>` : box.textVal;
-        
-        div.innerHTML = `<div class="box-title" style="color:${box.textColor || 'black'};">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${displayVal}</div>`;
+        div.innerHTML = `<div class="box-title" style="color:${box.textColor || 'black'};">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${box.isVar ? `<${box.textVal}>` : box.textVal}</div>`;
         div.onmousedown = (e) => startDragExisting(e, i);
         layer.appendChild(div);
     });
 }
 
-// --- DRAG LOGIC ---
+// --- DRAG ---
 function startDragExisting(e, idx) {
     e.preventDefault(); dragIdx = idx; dragStartX = e.clientX; dragStartY = e.clientY;
     const original = e.currentTarget; const rect = original.getBoundingClientRect();
@@ -141,7 +161,7 @@ function handleMouseUp(e) {
 window.addEventListener('mousemove', (e) => { if (!draggingElement) return; const rect = document.getElementById('canvas-container').getBoundingClientRect(); draggingElement.style.left = `${e.clientX - rect.left - offset.x}px`; draggingElement.style.top = `${e.clientY - rect.top - offset.y}px`; });
 window.addEventListener('mouseup', handleMouseUp);
 
-// --- PRESENTATION ENGINE ---
+// --- PRESENTATION ENGINE (v39 Persistence Principles) ---
 function startPresentation() {
     document.getElementById('app').innerHTML = `<div class="presentation-fullscreen"><div class="slide-fit" id="slide-canvas" style="background:${currentView.canvasBg || '#ffffff'}"></div><div class="presentation-nav"><button onclick="window.close()">${iconHome}</button><span>${currentRowIndex+1} / ${currentView.data.length}</span><button onclick="prevSlide()">${iconLeft}</button><button onclick="nextSlide()">${iconRight}</button></div></div>`;
     renderSlideContent();
@@ -172,21 +192,27 @@ function editLiveValue(idx) {
     const box = currentView.boxes[idx];
     const oldVal = currentView.data[currentRowIndex][box.textVal] || '---';
     const newVal = prompt(`Update Variable "${box.textVal}" for Row ${currentRowIndex+1}:`, oldVal);
+    
     if (newVal !== null && newVal !== oldVal) {
+        // Record in History
         if (!currentView.history) currentView.history = [];
         currentView.history.push({ time: new Date().toLocaleString(), row: currentRowIndex + 1, col: box.textVal, old: oldVal, new: newVal });
+        // Update Actual Dataset
         currentView.data[currentRowIndex][box.textVal] = newVal;
-        triggerSave(); closePop(); renderSlideContent();
+        triggerSave(); 
+        closePop(); 
+        renderSlideContent();
     }
 }
 
-// --- FILE OPS ---
+// --- FILE EXPORT ---
 function exportFinalFiles() {
     if (!currentView || !currentView.data.length) return alert("No data");
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(currentView.data);
     XLSX.utils.book_append_sheet(wb, ws, "UpdatedData");
-    XLSX.writeFile(wb, `${currentView.name}_Updated.xlsx`);
+    XLSX.writeFile(wb, `${currentView.name.replace(/\s+/g,'_')}_Updated.xlsx`);
+    
     const logHeader = `HISTORY LOG: ${currentView.name}\nGenerated: ${new Date().toLocaleString()}\n--------------------------\n`;
     const logBody = (currentView.history || []).map(h => `[${h.time}] Row ${h.row} | ${h.col}: ${h.old} -> ${h.new}`).join('\n');
     const blob = new Blob([logHeader + logBody], { type: 'text/plain' });
