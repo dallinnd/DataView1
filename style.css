@@ -62,3 +62,39 @@ button { cursor: pointer; border: none; border-radius: 10px; font-weight: 600; p
 .pills-container { display: flex; flex-wrap: wrap; gap: 8px; }
 .var-pill { padding: 8px 14px; background: #fff; border: 1px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 0.85rem; }
 .var-pill.selected { background: var(--orange); color: white; border-color: var(--orange); }
+
+/* ... [Keep all your existing CSS from the previous turn] ... */
+
+/* Detail Modal for Presentation Mode */
+.detail-modal {
+    background: white;
+    width: 90%;
+    max-width: 800px;
+    border-radius: 24px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.detail-title {
+    font-size: 1.8rem;
+    color: var(--slate);
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.detail-value {
+    font-size: 4rem; /* Massive text for visibility */
+    font-weight: 800;
+    color: var(--dark);
+    word-break: break-word;
+    margin-bottom: 30px;
+    line-height: 1.1;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
