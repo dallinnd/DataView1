@@ -1,4 +1,4 @@
-/* --- DATA VIEW PRO: PREMIUM GLASS ENGINE --- */
+/* --- DATA VIEW PRO: FINAL SYSTEM STYLES --- */
 :root {
   --primary-grad: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --success-grad: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
@@ -10,53 +10,22 @@
   --glass: rgba(255, 255, 255, 0.75);
 }
 
-body { 
-  margin: 0; 
-  font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-  background: var(--bg-soft); 
-  color: var(--dark); 
-  overflow: hidden; 
-}
-
+body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg-soft); color: var(--dark); overflow: hidden; }
 #app { height: 100vh; display: flex; flex-direction: column; }
 .main-content { display: flex; flex: 1; overflow: hidden; }
-
-/* --- HOME SCREEN LAYOUT --- */
-.home-container {
-    padding: 60px 20px;
-    max-width: 900px;
-    margin: 0 auto;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.view-card {
-    background: white;
-    padding: 25px;
-    border-radius: 24px;
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.03);
-    width: 100%;
-    box-sizing: border-box;
-    border: 1px solid #f1f5f9;
-}
 
 /* --- SIDEBAR EDITOR --- */
 .editor-sidebar {
   width: 400px; background: white; border-right: 1px solid #e2e8f0;
   display: flex; flex-direction: column; padding: 25px; 
-  box-shadow: 10px 0 30px rgba(0,0,0,0.03); z-index: 100; 
-  overflow-y: auto; box-sizing: border-box;
+  box-shadow: 10px 0 30px rgba(0,0,0,0.03); z-index: 100; overflow-y: auto; box-sizing: border-box;
 }
 
 .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
 .property-group { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9; }
 .property-group h4 { margin: 0 0 10px 0; font-size: 0.8rem; color: var(--slate); text-transform: uppercase; letter-spacing: 0.1em; }
 
-/* Sidebar Inputs */
+/* Global Title Input in Sidebar */
 .global-title-input {
     width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #e2e8f0;
     font-size: 1rem; font-weight: 700; color: var(--dark); outline: none; box-sizing: border-box;
@@ -70,7 +39,7 @@ body {
     box-shadow: 0 25px 60px rgba(0,0,0,0.05); overflow: hidden;
 }
 
-/* --- BOXES (With Centered Wrapping) --- */
+/* --- BOXES & WRAPPING --- */
 .box-instance { 
   position: absolute; display: flex; flex-direction: column; align-items: center; 
   border-radius: 24px; box-sizing: border-box; padding: 15px; 
@@ -93,7 +62,6 @@ body {
     word-wrap: break-word; pointer-events: none;
 }
 
-/* Ghost Box Black Outline */
 .box-instance.dragging { 
     z-index: 9999 !important; border: 3px solid #000 !important; 
     box-shadow: 0 20px 40px rgba(0,0,0,0.2); pointer-events: none;
@@ -107,14 +75,27 @@ button { cursor: pointer; border: none; font-weight: 700; border-radius: 18px; t
 .danger-btn { background: var(--danger-grad); padding: 15px 25px; }
 .size-btn { background: var(--slate); padding: 12px; font-family: monospace; font-size: 0.9rem; }
 
-/* --- PRESENTATION POPUP --- */
-.popup-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; backdrop-filter: blur(12px); }
-
-.detail-modal { 
-    background: white; width: 95%; height: 92%; border-radius: 35px; 
-    padding: 40px; display: flex; flex-direction: column; 
-    justify-content: center; align-items: center; box-sizing: border-box; 
+/* --- PRESENTATION NAV (Bottom-Left & Small) --- */
+.presentation-nav {
+  position: fixed; bottom: 20px; left: 20px;
+  background: rgba(15, 23, 42, 0.9); /* Dark background */
+  padding: 8px 12px; border-radius: 15px;
+  display: flex; gap: 8px; align-items: center;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2); z-index: 10000;
+  border: 1px solid rgba(255,255,255,0.1);
 }
+
+.presentation-nav button { 
+    background: transparent; padding: 6px; border-radius: 8px; 
+    display: flex; align-items: center; justify-content: center;
+}
+.presentation-nav button:hover { background: rgba(255,255,255,0.1); }
+.presentation-nav svg { width: 18px; height: 18px; fill: white; }
+.presentation-nav span { color: white; font-size: 0.75rem; font-weight: 700; margin: 0 5px; }
+
+/* --- MODALS --- */
+.popup-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; backdrop-filter: blur(12px); }
+.detail-modal { background: white; width: 95%; height: 92%; border-radius: 35px; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
 .detail-value { font-size: 6rem; font-weight: 900; margin-bottom: 30px; line-height: 1; word-break: break-all; }
 
 /* Color Grid */
