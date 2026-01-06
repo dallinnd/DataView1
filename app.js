@@ -13,8 +13,21 @@ let dragIdx = -1;
 let dragStartX, dragStartY;
 let offset = { x: 0, y: 0 };
 
-const bgPresets = ['#ffffff','#f1f5f9','#1e293b','#fee2e2','#dcfce7','#dbeafe','#fef3c7'];
-const textPresets = ['#000000','#ffffff','#ef4444','#3b82f6','#10b981','#f97316'];
+const bgPresets = [
+    '#ffffff', // Simple White
+    '#f8fafc', // Simple Slate
+    '#1e293b', // Deep Dark
+    'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', // Indigo/Purple
+    'linear-gradient(135deg, #00b09b 0%, #96c93d 100%)', // Teal/Green
+    'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', // Pink/Orange
+    'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', // Blue/Cyan
+    'linear-gradient(135deg, #434343 0%, #000000 100%)', // Solid Black Grad
+    '#fee2e2', // Soft Red
+    '#dcfce7', // Soft Green
+    '#dbeafe'  // Soft Blue
+];
+
+const textPresets = ['#0f172a', '#ffffff', '#2563eb', '#dc2626', '#16a34a'];
 
 const iconHome = `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`;
 const iconLeft = `<svg viewBox="0 0 24 24" width="20" height="20"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
