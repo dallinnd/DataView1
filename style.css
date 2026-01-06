@@ -1,299 +1,105 @@
-/* --- DATA VIEW MODERN GLASS ENGINE --- */
+/* --- DATA VIEW PRO: INTEGRATED MASTER STYLES --- */
 :root {
-  /* Gradients for UI Elements */
   --primary-grad: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --success-grad: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
   --orange-grad: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  --danger-grad: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
-  
-  /* Solid Colors */
+  --danger-grad: linear-gradient(135deg, #ef4444 0%, #991b1b 100%);
   --dark: #0f172a;
   --slate: #64748b;
-  --bg-soft: #f1f5f9;
-  --white: #ffffff;
+  --bg-soft: #f8fafc;
+  --light-grey: #e2e8f0;
   --glass: rgba(255, 255, 255, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.4);
 }
 
-body { 
-  margin: 0; 
-  font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-  background: var(--bg-soft); 
-  color: var(--dark); 
-  overflow-x: hidden; 
-  line-height: 1.5;
+body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(--bg-soft); color: var(--dark); overflow: hidden; }
+#app { height: 100vh; display: flex; flex-direction: column; }
+.main-content { display: flex; flex: 1; overflow: hidden; }
+
+/* --- CENTERED MENUS (50% WIDTH) --- */
+.home-container { width: 50%; margin: 0 auto; padding: 60px 0; display: flex; flex-direction: column; box-sizing: border-box; }
+@media (max-width: 1100px) { .home-container { width: 80%; } }
+
+.view-card {
+    background: white; padding: 25px; border-radius: 24px; margin-bottom: 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.03); border: 1px solid #f1f5f9;
 }
 
-#app { 
-  padding: 30px; 
-  max-width: 1400px; 
-  margin: 0 auto; 
+/* --- SIDEBAR & MODERN ROUNDED INPUTS --- */
+.editor-sidebar {
+  width: 400px; background: white; border-right: 1px solid #e2e8f0;
+  display: flex; flex-direction: column; padding: 25px; 
+  box-shadow: 10px 0 30px rgba(0,0,0,0.03); z-index: 100; overflow-y: auto; box-sizing: border-box;
 }
 
-.main-heading { 
-  text-align: center; 
-  font-size: 2.8rem; 
-  color: var(--dark); 
-  margin: 40px 0 20px 0; 
-  font-weight: 900; 
-  letter-spacing: -0.03em; 
+input[type="text"], select {
+    width: 100%; padding: 14px 18px; border-radius: 20px; 
+    border: 1px solid #e2e8f0; font-size: 0.95rem; background: #f8fafc;
+    outline: none; transition: 0.2s; box-sizing: border-box;
 }
+input[type="text"]:focus { border-color: #667eea; background: white; box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1); }
 
-/* --- MODERN GLASSY BUTTONS --- */
-button { 
-  cursor: pointer; 
-  border: none; 
-  font-weight: 700; 
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-  display: inline-flex; 
-  align-items: center; 
-  justify-content: center;
-  text-transform: uppercase; 
-  letter-spacing: 0.8px;
-  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-}
+.sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+.property-group { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9; }
+.property-group h4 { margin: 0 0 10px 0; font-size: 0.8rem; color: var(--slate); text-transform: uppercase; letter-spacing: 0.1em; }
 
-button:active { transform: scale(0.96); }
-button:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15); }
-
-.primary-btn { 
-  background: var(--success-grad); 
-  color: white; 
-  width: 100%; 
-  padding: 24px; 
-  font-size: 1.25rem; 
-  border-radius: 20px; 
-}
-
-.blue-btn { 
-  background: var(--primary-grad); 
-  color: white; 
-  padding: 20px 36px; 
-  font-size: 1rem; 
-  border-radius: 18px; 
-}
-
-.orange-btn { 
-  background: var(--orange-grad); 
-  color: white; 
-  padding: 20px 36px; 
-  font-size: 1rem; 
-  border-radius: 18px; 
-}
-
-.size-btn { 
-  background: var(--slate); 
-  color: white; 
-  padding: 14px 22px; 
-  border-radius: 14px; 
-  font-family: monospace;
-}
-
-/* --- DASHBOARD CANVAS --- */
-.canvas-header { 
-  display: flex; 
-  justify-content: space-between; 
-  align-items: center; 
-  margin-bottom: 30px; 
-}
-
+/* --- CANVAS AREA --- */
+.canvas-area { flex: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; position: relative; overflow-y: auto; }
 .canvas-16-9 { 
-  position: relative; 
-  width: 100%; 
-  aspect-ratio: 16 / 9; 
-  background: white; 
-  border-radius: 35px; 
-  box-shadow: 0 30px 60px -12px rgba(0,0,0,0.12); 
-  border: 1px solid var(--glass-border); 
-  overflow: hidden;
+    position: relative; width: 100%; max-width: 1100px; aspect-ratio: 16 / 9; 
+    background: white; border-radius: 35px; border: 1px solid #e2e8f0;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.05); overflow: hidden;
 }
 
-.grid-overlay { 
-  display: grid; 
-  grid-template-columns: repeat(6, 1fr); 
-  grid-template-rows: repeat(4, 1fr); 
-  position: absolute; 
-  inset: 0; 
-  z-index: 1; 
-  pointer-events: none; 
-}
-
-.grid-cell { border: 1px dashed rgba(203, 213, 225, 0.4); }
-
-/* --- GLASS DATA BOXES --- */
+/* --- BOXES --- */
 .box-instance { 
-  position: absolute; 
-  z-index: 2; 
-  display: flex; 
-  flex-direction: column; 
-  align-items: center; 
-  border: 1px solid var(--glass-border); 
-  border-radius: 30px; /* Super rounded corners */
-  box-sizing: border-box; 
-  overflow: hidden; 
-  padding: 25px; /* Increased internal padding */
-  background: var(--glass); 
-  backdrop-filter: blur(15px); /* The Glass effect */
-  -webkit-backdrop-filter: blur(15px);
-  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+  position: absolute; display: flex; flex-direction: column; align-items: center; 
+  border-radius: 24px; box-sizing: border-box; padding: 15px; 
+  backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+  border: 1px solid rgba(255,255,255,0.4); margin: 8px; 
+  width: calc(var(--w-pct) - 16px) !important; 
+  height: calc(var(--h-pct) - 16px) !important;
+  cursor: grab;
 }
 
+.box-instance.selected-box { border: 3px solid #667eea; box-shadow: 0 0 15px rgba(102, 126, 234, 0.2); }
+.box-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.45; pointer-events: none; }
+.box-content { flex: 1; display: flex; align-items: center; justify-content: center; font-weight: 800; line-height: 1.2; text-align: center; width: 100%; word-wrap: break-word; pointer-events: none; }
+
+/* Ghost Dragging */
 .box-instance.dragging { 
-  z-index: 9999 !important; 
-  opacity: 0.9; 
-  box-shadow: 0 25px 50px rgba(0,0,0,0.25); 
-  transform: scale(1.05);
+    z-index: 9999 !important; border: 3px solid #000 !important; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3); pointer-events: none; opacity: 0.8;
 }
 
-.box-title { 
-  width: 100%; 
-  text-align: center; 
-  font-size: 1rem; 
-  font-weight: 600; 
-  color: var(--slate);
-  margin-bottom: 10px; 
-  text-transform: uppercase; 
-  letter-spacing: 1.5px;
-  pointer-events: none; 
+/* --- BUTTONS --- */
+button { cursor: pointer; border: none; font-weight: 700; border-radius: 20px; transition: 0.3s; color: white; text-transform: uppercase; }
+.primary-btn { background: var(--success-grad); width: 100%; padding: 22px; font-size: 1.1rem; }
+.blue-btn { background: var(--primary-grad); padding: 15px 25px; }
+.orange-btn { background: var(--orange-grad); padding: 15px 25px; }
+.danger-btn { background: var(--danger-grad); padding: 15px 25px; color: white !important; }
+.size-btn { background: var(--slate); padding: 12px; font-family: monospace; font-size: 0.9rem; }
+
+/* --- PRESENTATION NAV --- */
+.presentation-nav {
+  position: fixed; bottom: 20px; left: 20px;
+  background: rgba(15, 23, 42, 0.9); padding: 8px 12px; border-radius: 15px;
+  display: flex; gap: 8px; align-items: center;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2); z-index: 10000;
+  border: 1px solid rgba(255,255,255,0.1);
 }
+.presentation-nav button { background: transparent; padding: 6px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.presentation-nav svg { width: 18px; height: 18px; fill: white; }
+.presentation-nav span { color: white; font-size: 0.75rem; font-weight: 700; }
 
-.box-content { 
-  flex: 1; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  width: 100%; 
-  text-align: center; 
-  font-weight: 800; 
-  line-height: 1.1; 
-  pointer-events: none; 
-}
+/* --- POPUP (Always Black Text) --- */
+.popup-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; backdrop-filter: blur(12px); }
+.detail-modal { background: white; width: 95%; height: 92%; border-radius: 35px; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
+.detail-value { font-size: 6rem; font-weight: 900; margin-bottom: 40px; line-height: 1; word-break: break-all; color: #000000 !important; }
 
-/* --- OVERLAYS & EDITOR --- */
-.popup-overlay { 
-  position: fixed; 
-  inset: 0; 
-  background: rgba(15, 23, 42, 0.7); 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  z-index: 9000; 
-  backdrop-filter: blur(12px); 
-}
-
-.editor-window { 
-  background: var(--white); 
-  width: 95%; 
-  height: 92%; 
-  border-radius: 40px; 
-  display: flex; 
-  padding: 40px; 
-  gap: 40px; 
-  box-sizing: border-box; 
-}
-
-.editor-preview-area { 
-  flex: 2; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  background: #f8fafc; 
-  border-radius: 30px; 
-  position: relative; 
-  border: 2px inset rgba(0,0,0,0.02);
-}
-
-#prev { 
-  transform: scale(0.5); 
-  box-shadow: 0 30px 60px rgba(0,0,0,0.15); 
-  border-radius: 30px; 
-  display: flex; 
-  flex-direction: column; 
-  background: var(--white); 
-}
-
-.editor-controls-area { flex: 1; overflow-y: auto; padding-right: 20px; }
-
-/* --- PRESENTATION DETAIL MODAL --- */
-.detail-modal { 
-  background: rgba(255, 255, 255, 0.95); 
-  width: 90%; 
-  max-width: 850px; 
-  border-radius: 45px; 
-  padding: 70px 50px; 
-  text-align: center; 
-  box-shadow: 0 40px 100px rgba(0,0,0,0.3); 
-  border: 1px solid white;
-}
-
-.detail-title { 
-  font-size: 1.8rem; 
-  color: var(--slate); 
-  margin-bottom: 25px; 
-  font-weight: 500; 
-  letter-spacing: 3px;
-}
-
-.detail-value { 
-  font-size: 5.5rem; 
-  font-weight: 900; 
-  color: var(--dark); 
-  margin-bottom: 50px; 
-  line-height: 1; 
-  background: var(--primary-grad);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent; /* Gradient Text for the Value */
-}
-
-/* --- NAVIGATION CONTROLS --- */
-.floating-controls { 
-  position: fixed; 
-  bottom: 40px; 
-  left: 50%; 
-  transform: translateX(-50%); 
-  display: flex; 
-  align-items: center; 
-  gap: 25px; 
-  background: rgba(255, 255, 255, 0.8); 
-  backdrop-filter: blur(20px);
-  padding: 15px 35px; 
-  border-radius: 60px; 
-  box-shadow: 0 15px 35px rgba(0,0,0,0.15); 
-  z-index: 10000; 
-  border: 1px solid rgba(255,255,255,0.5);
-}
-
-/* Inputs & Pills */
-input[type="text"] {
-  width: 100%;
-  padding: 18px;
-  border: 2px solid #e2e8f0;
-  border-radius: 18px;
-  font-size: 1.1rem;
-  transition: all 0.3s;
-}
-
-input[type="text"]:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-  outline: none;
-}
-
-.color-grid { display: flex; gap: 12px; flex-wrap: wrap; padding: 10px 0; }
-.circle { width: 42px; height: 42px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer; }
-
-.var-pill { 
-  padding: 12px 22px; 
-  background: white; 
-  border: 2px solid #e2e8f0; 
-  border-radius: 50px; 
-  font-size: 0.95rem; 
-  font-weight: 600;
-}
-
-.var-pill.selected { 
-  background: var(--orange-grad); 
-  color: white; 
-  border-color: transparent; 
-  box-shadow: 0 10px 20px rgba(240, 147, 251, 0.3);
-}
+/* Pills & Grid */
+.color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.circle { width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; }
+.pills-container { display: flex; flex-wrap: wrap; gap: 8px; max-height: 250px; overflow-y: auto; }
+.var-pill { padding: 10px 18px; background: white; border: 1px solid #e2e8f0; border-radius: 50px; font-size: 0.85rem; cursor: pointer; color: var(--dark); }
+.var-pill.selected { background: var(--orange-grad); color: white; border-color: transparent; }
