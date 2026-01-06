@@ -14,7 +14,6 @@ let dragIdx = -1;
 let dragStartX, dragStartY;
 let offset = { x: 0, y: 0 };
 
-// EXPANDED PRESETS (Double the Colors)
 const bgPresets = [
     '#ffffff','#f8fafc','#f1f5f9','#e2e8f0','#cbd5e1','#94a3b8','#1e293b','#0f172a',
     '#fee2e2','#ffedd5','#fef9c3','#dcfce7','#d1fae5','#dbeafe','#e0e7ff','#f5f3ff',
@@ -30,20 +29,20 @@ const bgPresets = [
 
 const textPresets = ['#000000','#ffffff','#ef4444','#3b82f6','#10b981','#f97316','#8b5cf6','#ec4899'];
 
-// --- STORAGE ---
+// --- PERSISTENCE ---
 document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('dataView_master_v46');
+    const saved = localStorage.getItem('dataView_v46_final');
     if (saved) views = JSON.parse(saved);
     renderHome();
 });
 
 function triggerSave() {
-    localStorage.setItem('dataView_master_v46', JSON.stringify(views));
+    localStorage.setItem('dataView_v46_final', JSON.stringify(views));
     const badge = document.getElementById('save-badge');
     if (badge) { badge.style.opacity = "1"; setTimeout(() => badge.style.opacity = "0", 1200); }
 }
 
-// --- NAVIGATION ---
+// --- APP NAVIGATION ---
 function renderHome() {
     selectedBoxIdx = null;
     const app = document.getElementById('app');
@@ -56,7 +55,7 @@ function renderHome() {
     views.forEach(v => {
         const d = document.createElement('div');
         d.className = 'view-card';
-        d.innerHTML = `<strong>${v.name}</strong><button class="blue-btn" onclick="openMenu('${v.createdAt}')">Open</button>`;
+        d.innerHTML = `<strong>${v.name}</strong><button class="blue-btn" onclick="openMenu('${v.createdAt}')">Open View</button>`;
         document.getElementById('view-list').appendChild(d);
     });
 }
@@ -77,7 +76,7 @@ function openMenu(id) {
         </div>`;
 }
 
-// --- SIDEBAR EDITOR ---
+// --- EDITOR LOGIC ---
 function renderEditCanvas() {
     const app = document.getElementById('app');
     app.innerHTML = `
@@ -88,7 +87,7 @@ function renderEditCanvas() {
                     <div class="grid-overlay"></div>
                     <div id="boxes-layer"></div>
                 </div>
-                <button class="blue-btn" style="margin-top:30px; width:100%; max-width:300px;" onclick="openMenu('${currentView.createdAt}')">Save & Exit</button>
+                <button class="blue-btn" style="margin-top:30px; width:100%; max-width:300px;" onclick="openMenu('${currentView.createdAt}')">Finish & Save</button>
             </main>
         </div>`;
     drawBoxes();
@@ -115,22 +114,19 @@ function renderGlobalControls() {
         <div class="property-group">
             <h4>Add New Box</h4>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-                ${['1x1','2x1','3x1','2x2','4x1','6x1','3x3','4x4'].map(s => `
-                    <button class="size-btn" onmousedown="startDragNew(event, ${s.split('x')[0]}, ${s.split('x')[1]})">${s}</button>
-                `).join('')}
+                ${['1x1','2x1','3x1','2x2','4x1','6x1','3x3','4x4'].map(s => `<button class="size-btn" onmousedown="startDragNew(event, ${s.split('x')[0]}, ${s.split('x')[1]})">${s}</button>`).join('')}
             </div>
         </div>
         <div class="property-group">
             <h4>Canvas Theme</h4>
             <div class="color-grid">${bgPresets.map(c => `<div class="circle" style="background:${c}" onclick="updateCanvasBg('${c}')"></div>`).join('')}</div>
         </div>
-        <button class="orange-btn" style="width:100%;" onclick="uploadExcel()">Upload Excel Data</button>`;
+        <button class="orange-btn" style="width:100%;" onclick="uploadExcel()">Upload Excel</button>`;
 }
 
 function renderBoxControls() {
     const box = currentView.boxes[selectedBoxIdx];
     const hasData = currentView.headers && currentView.headers.length > 0;
-    
     let contentSection = '';
     if (!box.isVar) {
         contentSection = `<input type="text" value="${box.textVal}" oninput="syncBoxAttr(${selectedBoxIdx}, 'textVal', this.value)" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">`;
@@ -138,12 +134,8 @@ function renderBoxControls() {
         const filtered = currentView.headers.filter(h => h.toLowerCase().includes(varSearchTerm.toLowerCase()));
         contentSection = `
             <input type="text" placeholder="Search..." value="${varSearchTerm}" oninput="handleVarSearch(this.value)" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; margin-bottom:10px;">
-            <div class="pills-container" id="pills-box">
-                ${filtered.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="syncBoxAttr(${selectedBoxIdx}, 'textVal', '${h}')">${h}</div>`).join('')}
-            </div>`;
-    } else {
-        contentSection = `<button class="orange-btn" style="width:100%; font-size:0.8rem;" onclick="uploadExcel()">Upload Excel</button>`;
-    }
+            <div class="pills-container" id="pills-box">${filtered.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="syncBoxAttr(${selectedBoxIdx}, 'textVal', '${h}')">${h}</div>`).join('')}</div>`;
+    } else { contentSection = `<button class="orange-btn" style="width:100%; font-size:0.8rem;" onclick="uploadExcel()">Upload Excel First</button>`; }
 
     return `
         <div class="property-group">
@@ -151,7 +143,7 @@ function renderBoxControls() {
             <input type="text" value="${box.title}" oninput="syncBoxAttr(${selectedBoxIdx}, 'title', this.value)" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
         </div>
         <div class="property-group">
-            <h4>Mode</h4>
+            <h4>Data Mode</h4>
             <select onchange="setBoxMode(${selectedBoxIdx}, this.value === 'var')" style="width:100%; padding:10px; border-radius:10px;">
                 <option value="const" ${!box.isVar ? 'selected' : ''}>Static</option>
                 <option value="var" ${box.isVar ? 'selected' : ''}>Variable</option>
@@ -162,20 +154,20 @@ function renderBoxControls() {
             ${contentSection}
         </div>
         <div class="property-group">
-            <h4>Look</h4>
+            <h4>Appearance</h4>
             <div class="color-grid">${bgPresets.map(c => `<div class="circle" style="background:${c}" onclick="syncBoxAttr(${selectedBoxIdx}, 'bgColor', '${c}')"></div>`).join('')}</div>
             <p style="margin-top:10px; font-size:0.7rem;">Text Color</p>
             <div class="color-grid">${textPresets.map(c => `<div class="circle" style="background:${c}" onclick="syncBoxAttr(${selectedBoxIdx}, 'textColor', '${c}')"></div>`).join('')}</div>
-            <div style="display:flex; align-items:center; gap:10px; margin-top:10px;">
-                <button class="blue-btn" style="padding:5px 15px;" onclick="syncBoxAttr(${selectedBoxIdx}, 'fontSize', ${box.fontSize - 4})">-</button>
-                <span>${box.fontSize}px</span>
-                <button class="blue-btn" style="padding:5px 15px;" onclick="syncBoxAttr(${selectedBoxIdx}, 'fontSize', ${box.fontSize + 4})">+</button>
+            <div style="display:flex; align-items:center; gap:10px; margin-top:20px;">
+                <button class="blue-btn" style="padding:8px 15px;" onclick="syncBoxAttr(${selectedBoxIdx}, 'fontSize', ${box.fontSize - 4})">-</button>
+                <span style="font-weight:bold;">${box.fontSize}px</span>
+                <button class="blue-btn" style="padding:8px 15px;" onclick="syncBoxAttr(${selectedBoxIdx}, 'fontSize', ${box.fontSize + 4})">+</button>
             </div>
         </div>
         <button class="danger-btn" style="width:100%;" onclick="deleteBox(${selectedBoxIdx})">Delete Box</button>`;
 }
 
-// --- DRAG LOGIC (Preview Drag) ---
+// --- GHOST DRAG ENGINE ---
 function startDragNew(e, w, h) {
     e.preventDefault(); 
     const container = document.getElementById('canvas-container');
@@ -188,8 +180,7 @@ function startDragNew(e, w, h) {
     draggingElement.style.width = `${boxW}px`;
     draggingElement.style.height = `${boxH}px`;
     draggingElement.style.background = '#ffffff';
-    // Show real box structure during drag
-    draggingElement.innerHTML = `<div class="box-title">Label</div><div class="box-content" style="font-size:24px;">Place</div>`;
+    draggingElement.innerHTML = `<div class="box-title">Label</div><div class="box-content" style="font-size:24px;">&lt;Placeholder&gt;</div>`;
     draggingElement.setAttribute('data-w', w);
     draggingElement.setAttribute('data-h', h);
     
@@ -238,7 +229,8 @@ function renderSlide() {
 function openLargePopup(idx, val) { 
     const box = currentView.boxes[idx]; 
     const overlay = document.createElement('div'); overlay.className = 'popup-overlay'; 
-    overlay.innerHTML = `<div class="detail-modal"><div class="detail-title">${box.title}</div><div class="detail-value">${val}</div><div style="display:flex; gap:20px;">${box.isVar ? `<button class="orange-btn" onclick="editLiveValue(${idx})">Edit Value</button>` : ''}<button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Close</button></div></div>`; document.body.appendChild(overlay); 
+    overlay.innerHTML = `<div class="detail-modal"><div class="detail-title">${box.title}</div><div class="detail-value" style="color:${box.textColor}">${val}</div><div style="display:flex; gap:20px;">${box.isVar ? `<button class="orange-btn" onclick="editLiveValue(${idx})">Edit Data</button>` : ''}<button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Close</button></div></div>`; 
+    document.body.appendChild(overlay); 
 }
 
 function handleVarSearch(val) { varSearchTerm = val; const pillsBox = document.getElementById('pills-box'); if(pillsBox) { const box = currentView.boxes[selectedBoxIdx]; const filtered = currentView.headers.filter(h => h.toLowerCase().includes(varSearchTerm.toLowerCase())); pillsBox.innerHTML = filtered.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="syncBoxAttr(${selectedBoxIdx}, 'textVal', '${h}')">${h}</div>`).join(''); } }
@@ -252,13 +244,13 @@ function refreshSidebar() { const sb = document.getElementById('sidebar'); if(sb
 function closePop() { const p = document.querySelector('.popup-overlay'); if(p) p.remove(); }
 function nextSlide() { if(currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } }
 function prevSlide() { if(currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
-function deleteView(id) { if(confirm("Delete View?")) { views = views.filter(v => v.createdAt != id); triggerSave(); renderHome(); } }
-function deleteBox(i) { currentView.boxes.splice(i,1); triggerSave(); deselectBox(); }
-function createNewView() { const name = prompt("Name:", "New Dashboard"); if(name) { currentView = { name, createdAt: Date.now(), boxes: [], data: [], headers: [], history: [] }; views.push(currentView); triggerSave(); renderEditCanvas(); } }
-function editLiveValue(idx) { const box = currentView.boxes[idx]; const oldVal = currentView.data[currentRowIndex][box.textVal] || '---'; const newVal = prompt(`Edit ${box.textVal}:`, oldVal); if (newVal !== null && newVal !== oldVal) { if (!currentView.history) currentView.history = []; currentView.history.push({ time: new Date().toLocaleTimeString(), row: currentRowIndex+1, col: box.textVal, old: oldVal, new: newVal }); currentView.data[currentRowIndex][box.textVal] = newVal; triggerSave(); closePop(); renderSlide(); } }
 function exportFinalFiles() { if (!currentView || !currentView.data.length) return alert("No data"); const wb = XLSX.utils.book_new(); const ws = XLSX.utils.json_to_sheet(currentView.data); XLSX.utils.book_append_sheet(wb, ws, "Data"); XLSX.writeFile(wb, `${currentView.name}_Updated.xlsx`); const log = (currentView.history || []).map(h => `[${h.time}] Row ${h.row} | ${h.col}: ${h.old} -> ${h.new}`).join('\n'); const blob = new Blob([log], { type: 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${currentView.name}_history.txt`; a.click(); }
 function uploadExcel() { const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.xlsx'; inp.onchange = (e) => { const reader = new FileReader(); reader.onload = (evt) => { const wb = XLSX.read(evt.target.result, {type:'binary'}); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); currentView.data = data; currentView.headers = Object.keys(data[0] || {}); triggerSave(); renderEditCanvas(); }; reader.readAsBinaryString(e.target.files[0]); }; inp.click(); }
 function startDragExisting(e, idx) { e.preventDefault(); dragIdx = idx; dragStartX = e.clientX; dragStartY = e.clientY; const original = e.currentTarget; const rect = original.getBoundingClientRect(); const containerRect = document.getElementById('canvas-container').getBoundingClientRect(); draggingElement = original.cloneNode(true); draggingElement.classList.add('dragging'); draggingElement.setAttribute('data-w', currentView.boxes[idx].w); draggingElement.setAttribute('data-h', currentView.boxes[idx].h); offset.x = e.clientX - rect.left; offset.y = e.clientY - rect.top; draggingElement.style.left = `${rect.left - containerRect.left}px`; draggingElement.style.top = `${rect.top - containerRect.top}px`; document.getElementById('canvas-container').appendChild(draggingElement); }
 function handleMouseUp(e) { if (!draggingElement) return; const container = document.getElementById('canvas-container'); const rect = container.getBoundingClientRect(); const gridX = Math.round(((e.clientX - rect.left - offset.x) / rect.width) * 6); const gridY = Math.round(((e.clientY - rect.top - offset.y) / rect.height) * 4); if (Math.hypot(e.clientX - dragStartX, e.clientY - dragStartY) < 5 && !isDraggingNew) { selectBox(dragIdx); } else if (gridX >= 0 && gridY >= 0 && gridX + parseInt(draggingElement.getAttribute('data-w')) <= 6 && gridY + parseInt(draggingElement.getAttribute('data-h')) <= 4) { if (isDraggingNew) { const hasH = currentView.headers && currentView.headers.length > 0; currentView.boxes.push({ x: gridX, y: gridY, w: parseInt(draggingElement.getAttribute('data-w')), h: parseInt(draggingElement.getAttribute('data-h')), title: 'Label', textVal: hasH ? currentView.headers[0] : 'Value', isVar: hasH, bgColor: '#ffffff', textColor: '#000', fontSize: 24 }); } else { currentView.boxes[dragIdx].x = gridX; currentView.boxes[dragIdx].y = gridY; } triggerSave(); } draggingElement.remove(); draggingElement = null; isDraggingNew = false; drawBoxes(); }
+function editLiveValue(idx) { const box = currentView.boxes[idx]; const oldVal = currentView.data[currentRowIndex][box.textVal] || '---'; const newVal = prompt(`Edit ${box.textVal}:`, oldVal); if (newVal !== null && newVal !== oldVal) { if (!currentView.history) currentView.history = []; currentView.history.push({ time: new Date().toLocaleTimeString(), row: currentRowIndex+1, col: box.textVal, old: oldVal, new: newVal }); currentView.data[currentRowIndex][box.textVal] = newVal; triggerSave(); closePop(); renderSlide(); } }
+function createNewView() { const name = prompt("Name:", "New View"); if(name) { currentView = { name, createdAt: Date.now(), boxes: [], data: [], headers: [], history: [] }; views.push(currentView); triggerSave(); renderEditCanvas(); } }
+function deleteView(id) { if(confirm("Delete View?")) { views = views.filter(v => v.createdAt != id); triggerSave(); renderHome(); } }
+function deleteBox(i) { currentView.boxes.splice(i,1); triggerSave(); deselectBox(); }
 window.addEventListener('mousemove', (e) => { if (!draggingElement) return; const rect = document.getElementById('canvas-container').getBoundingClientRect(); draggingElement.style.left = `${e.clientX - rect.left - offset.x}px`; draggingElement.style.top = `${e.clientY - rect.top - offset.y}px`; });
 window.addEventListener('mouseup', handleMouseUp);
