@@ -1,27 +1,28 @@
 /**
- * DATA VIEW - MASTER ENGINE v33.0
- * Fixed: Deep Persistence, Presentation Editing, .txt History Log.
+ * DATA VIEW - MASTER ENGINE v34.0
+ * Features: 2-Sheet Excel Export (Data + History Log), Deep Save Persistence, 
+ * Focus-Safe Instant Editor, and Height-Optimized Preview.
  */
 
 let views = [];
 let currentView = null;
 let currentRowIndex = 0;
 
-// Drag & Interaction State
+// Interaction State
 let draggingElement = null;
 let isDraggingNew = false;
 let dragIdx = -1;
 let dragStartX, dragStartY;
 let offset = { x: 0, y: 0 };
 
-const bgPresets = ['#ffffff','#f1f5f9','#1e293b','linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%)','linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)','linear-gradient(135deg, #ee9ca7 0%, #ffdde1 100%)','linear-gradient(135deg, #11998e 0%, #38ef7d 100%)','linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%)','linear-gradient(135deg, #f97316 0%, #ed8936 100%)','linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)'];
+const bgPresets = ['#ffffff','#f1f5f9','#1e293b','linear-gradient(135deg, #FF5F6D 0%, #FFC371 100%)','linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)','linear-gradient(135deg, #ee9ca7 0%, #ffdde1 100%)','linear-gradient(135deg, #11998e 0%, #38ef7d 100%)','linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%)','linear-gradient(135deg, #f97316 0%, #ed8936 100%)'];
 const textPresets = ['#000000','#ffffff','#ef4444','#3b82f6','#10b981','#f97316'];
 
 const iconHome = `<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`;
 const iconLeft = `<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
 const iconRight = `<svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`;
 
-// --- STORAGE & BOOTSTRAP ---
+// --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem('dataView_master_final');
     if (saved) views = JSON.parse(saved);
@@ -34,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else renderHome();
 });
 
-// CRITICAL: Updates the master array before writing to LocalStorage
+// Sync local view state back to master array before writing to storage
 function saveAll() {
     if (currentView) {
         const idx = views.findIndex(v => v.createdAt === currentView.createdAt);
@@ -43,38 +44,39 @@ function saveAll() {
     localStorage.setItem('dataView_master_final', JSON.stringify(views));
 }
 
-// --- HISTORY EXPORT (.txt) ---
+// --- EXCEL EXPORT (Data + History Sheets) ---
 function exportData() {
-    if (!currentView || !currentView.history || currentView.history.length === 0) {
-        return alert("No changes recorded in history yet!");
-    }
-    let content = `HISTORY LOG - ${currentView.name}\nExported: ${new Date().toLocaleString()}\n`;
-    content += `==================================================\n\n`;
-    currentView.history.forEach((l, i) => {
-        content += `${i+1}. Row #${l.row} | Variable: ${l.col} | Old: ${l.old} | Updated: ${l.new}\n`;
-    });
-    const blob = new Blob([content], { type: 'text/plain' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${currentView.name.replace(/\s+/g, '_')}_history.txt`;
-    link.click();
+    if (!currentView || !currentView.data) return alert("No data to export!");
+
+    const wb = XLSX.utils.book_new();
+
+    // Sheet 1: Updated Dataset
+    const ws_data = XLSX.utils.json_to_sheet(currentView.data);
+    XLSX.utils.book_append_sheet(wb, ws_data, "Updated Data");
+
+    // Sheet 2: Edit History Log
+    const historyData = (currentView.history || []).map((l, i) => ({
+        "Edit #": i + 1,
+        "Row Number": l.row,
+        "Variable": l.col,
+        "Original Value": l.old,
+        "New Value": l.new,
+        "Time": new Date().toLocaleTimeString()
+    }));
+    const ws_history = XLSX.utils.json_to_sheet(historyData);
+    XLSX.utils.book_append_sheet(wb, ws_history, "History Log");
+
+    XLSX.writeFile(wb, `${currentView.name.replace(/\s+/g, '_')}_Final_Report.xlsx`);
 }
 
-// --- PRESENTATION & EDIT LOGIC ---
-function startPresentation() {
-    if (!currentView.history) currentView.history = [];
-    currentRowIndex = 0; renderSlide();
-    window.addEventListener('keydown', (e) => { 
-        if (e.key === 'ArrowRight' || e.key === ' ') nextSlide(); 
-        if (e.key === 'ArrowLeft') prevSlide(); 
-    });
-}
-
+// --- LIVE EDITING ---
 function editLiveValue(idx) {
     const box = currentView.boxes[idx];
     const oldVal = currentView.data[currentRowIndex][box.textVal] || '---';
-    const newVal = prompt(`Editing Row ${currentRowIndex + 1} | Variable: ${box.textVal}`, oldVal);
+    const newVal = prompt(`Update Value for ${box.textVal} (Row ${currentRowIndex + 1}):`, oldVal);
+
     if (newVal !== null && newVal !== oldVal) {
+        if (!currentView.history) currentView.history = [];
         currentView.history.push({ row: currentRowIndex + 1, col: box.textVal, old: oldVal, new: newVal });
         currentView.data[currentRowIndex][box.textVal] = newVal;
         saveAll(); closePop(); renderSlide();
@@ -122,34 +124,13 @@ function openEditor(idx) {
     document.body.appendChild(overlay);
 }
 
-function updateTitle(idx, val) { currentView.boxes[idx].title = val; const pt = document.getElementById('prev-title'); if (pt) pt.innerText = val; saveAll(); }
-function applyAttr(idx, key, val) { 
-    currentView.boxes[idx][key] = val; 
-    const p = document.getElementById('prev'); 
-    if (p) { if (key === 'bgColor') p.style.background = val; if (key === 'textColor') p.style.color = val; } 
-    saveAll(); 
-}
-function adjustFont(idx, d) { 
-    currentView.boxes[idx].fontSize = (currentView.boxes[idx].fontSize || 36) + d; 
-    const txt = document.getElementById('prev-txt'); const szSpan = document.getElementById('sz');
-    if (txt) txt.style.fontSize = currentView.boxes[idx].fontSize + 'px';
-    if (szSpan) szSpan.innerText = currentView.boxes[idx].fontSize;
-    saveAll();
-}
-function renderPills(idx) {
-    const box = currentView.boxes[idx];
-    if (!box.isVar) return `<input type="text" value="${box.textVal}" oninput="updateBoxValue(${idx}, this.value)" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">`;
-    if (!currentView.headers || currentView.headers.length === 0) return `<button class="orange-btn" style="width:100%" onclick="uploadExcelFromEditor(${idx})">Upload Excel to see Variables</button>`;
-    return `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`;
-}
-function updateBoxValue(idx, val) { 
-    currentView.boxes[idx].textVal = val; 
-    const txt = document.getElementById('prev-txt'); if (txt) txt.innerText = currentView.boxes[idx].isVar ? `<${val}>` : val;
-    document.querySelectorAll('.var-pill').forEach(p => p.classList.toggle('selected', p.innerText === val));
-    saveAll(); 
-}
+function updateTitle(idx, val) { currentView.boxes[idx].title = val; document.getElementById('prev-title').innerText = val; saveAll(); }
+function applyAttr(idx, key, val) { currentView.boxes[idx][key] = val; const p = document.getElementById('prev'); if (p) { if (key === 'bgColor') p.style.background = val; if (key === 'textColor') p.style.color = val; } saveAll(); }
+function adjustFont(idx, d) { currentView.boxes[idx].fontSize = (currentView.boxes[idx].fontSize || 36) + d; const txt = document.getElementById('prev-txt'); const szSpan = document.getElementById('sz'); if (txt) txt.style.fontSize = currentView.boxes[idx].fontSize + 'px'; if (szSpan) szSpan.innerText = currentView.boxes[idx].fontSize; saveAll(); }
+function renderPills(idx) { const b = currentView.boxes[idx]; if (!b.isVar) return `<input type="text" value="${b.textVal}" oninput="updateBoxValue(${idx}, this.value)" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; box-sizing:border-box;">`; if (!currentView.headers || currentView.headers.length === 0) return `<button class="orange-btn" style="width:100%" onclick="uploadExcelFromEditor(${idx})">Upload Excel to see Variables</button>`; return `<div class="pills-container">${currentView.headers.map(h => `<div class="var-pill ${b.textVal === h ? 'selected' : ''}" onclick="updateBoxValue(${idx}, '${h}')">${h}</div>`).join('')}</div>`; }
+function updateBoxValue(idx, val) { currentView.boxes[idx].textVal = val; const t = document.getElementById('prev-txt'); if (t) t.innerText = currentView.boxes[idx].isVar ? `<${val}>` : val; document.querySelectorAll('.var-pill').forEach(p => p.classList.toggle('selected', p.innerText === val)); saveAll(); }
 
-// --- DRAG ENGINE ---
+// --- DRAG SYSTEM ---
 function handleMouseUp(e) {
     if (!draggingElement) return;
     const container = document.getElementById('canvas-container'); const rect = container.getBoundingClientRect();
@@ -164,29 +145,17 @@ function handleMouseUp(e) {
     }
     if (draggingElement) draggingElement.remove(); draggingElement = null; isDraggingNew = false; drawBoxes();
 }
-function startDragExisting(e, idx) {
-    e.preventDefault(); dragIdx = idx; dragStartX = e.clientX; dragStartY = e.clientY;
-    const original = e.currentTarget; const rect = original.getBoundingClientRect(); const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
-    draggingElement = original.cloneNode(true); draggingElement.classList.add('dragging'); draggingElement.setAttribute('data-w', currentView.boxes[idx].w); draggingElement.setAttribute('data-h', currentView.boxes[idx].h);
-    offset.x = e.clientX - rect.left; offset.y = e.clientY - rect.top; draggingElement.style.left = `${rect.left - containerRect.left}px`; draggingElement.style.top = `${rect.top - containerRect.top}px`;
-    document.getElementById('canvas-container').appendChild(draggingElement);
-}
-function startDragNew(e, w, h) {
-    e.preventDefault(); dragStartX = e.clientX; dragStartY = e.clientY;
-    const container = document.getElementById('canvas-container'); const rect = container.getBoundingClientRect(); const btnRect = e.currentTarget.getBoundingClientRect();
-    draggingElement = document.createElement('div'); draggingElement.className = 'box-instance dragging'; draggingElement.style.width = `${(container.offsetWidth/6)*w}px`; draggingElement.style.height = `${(container.offsetHeight/4)*h}px`; draggingElement.style.background = 'var(--primary)'; draggingElement.innerHTML = `<div class="box-content" style="color:white">Place</div>`;
-    draggingElement.setAttribute('data-w', w); draggingElement.setAttribute('data-h', h);
-    offset.x = ((container.offsetWidth/6)*w)/2; offset.y = ((container.offsetHeight/4)*h)/2; draggingElement.style.left = `${btnRect.left - rect.left}px`; draggingElement.style.top = `${btnRect.top - rect.top}px`;
-    container.appendChild(draggingElement); isDraggingNew = true;
-}
+function startDragExisting(e, idx) { e.preventDefault(); dragIdx = idx; dragStartX = e.clientX; dragStartY = e.clientY; const original = e.currentTarget; const rect = original.getBoundingClientRect(); const containerRect = document.getElementById('canvas-container').getBoundingClientRect(); draggingElement = original.cloneNode(true); draggingElement.classList.add('dragging'); draggingElement.setAttribute('data-w', currentView.boxes[idx].w); draggingElement.setAttribute('data-h', currentView.boxes[idx].h); offset.x = e.clientX - rect.left; offset.y = e.clientY - rect.top; draggingElement.style.left = `${rect.left - containerRect.left}px`; draggingElement.style.top = `${rect.top - containerRect.top}px`; document.getElementById('canvas-container').appendChild(draggingElement); }
+function startDragNew(e, w, h) { e.preventDefault(); dragStartX = e.clientX; dragStartY = e.clientY; const container = document.getElementById('canvas-container'); const rect = container.getBoundingClientRect(); const btnRect = e.currentTarget.getBoundingClientRect(); draggingElement = document.createElement('div'); draggingElement.className = 'box-instance dragging'; draggingElement.style.width = `${(container.offsetWidth/6)*w}px`; draggingElement.style.height = `${(container.offsetHeight/4)*h}px`; draggingElement.style.background = 'var(--primary)'; draggingElement.innerHTML = `<div class="box-content" style="color:white">Place</div>`; draggingElement.setAttribute('data-w', w); draggingElement.setAttribute('data-h', h); offset.x = ((container.offsetWidth/6)*w)/2; offset.y = ((container.offsetHeight/4)*h)/2; draggingElement.style.left = `${btnRect.left - rect.left}px`; draggingElement.style.top = `${btnRect.top - rect.top}px`; container.appendChild(draggingElement); isDraggingNew = true; }
 function initDragListeners() { window.removeEventListener('mousemove', handleMouseMove); window.removeEventListener('mouseup', handleMouseUp); window.addEventListener('mousemove', handleMouseMove); window.addEventListener('mouseup', handleMouseUp); }
 function handleMouseMove(e) { if (!draggingElement) return; const container = document.getElementById('canvas-container'); const rect = container.getBoundingClientRect(); draggingElement.style.left = `${e.clientX - rect.left - offset.x}px`; draggingElement.style.top = `${e.clientY - rect.top - offset.y}px`; }
 
-// --- BOILERPLATE ---
+// --- CORE RENDERING ---
 function renderHome() { const app = document.getElementById('app'); app.innerHTML = `<h1 class="main-heading">Data View</h1><button class="primary-btn" onclick="createNewView()">+ Create New View</button><h2 style="text-align:center; margin-top:40px; color:#475569; font-size:1rem; text-transform:uppercase;">Existing Displays</h2><div id="view-list"></div>`; views.sort((a,b) => b.updatedAt - a.updatedAt).forEach(v => { const div = document.createElement('div'); div.style = "background:white; padding:20px; border-radius:18px; margin-top:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid #e2e8f0;"; div.innerHTML = `<div><strong>${v.name}</strong></div><button class="blue-btn" onclick="openMenu('${v.createdAt}')">Open</button>`; document.getElementById('view-list').appendChild(div); }); }
-function openMenu(id) { currentView = views.find(v => v.createdAt == id); document.getElementById('app').innerHTML = `<h1 class="main-heading">${currentView.name}</h1><div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;"><button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="exportData()">Export (.txt)</button><button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="window.open(window.location.origin+window.location.pathname+'?view=${id}','_blank')">View Presentation</button><button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="renderEditCanvas()">Edit Layout</button><button class="blue-btn" style="height:140px; font-size:1.2rem; background:var(--danger);" onclick="deleteView('${id}')">Delete View</button></div><button onclick="renderHome()" style="margin-top:30px; width:100%; background:none; text-decoration:underline; border:none; color:var(--slate);">Back to Home</button>`; }
+function openMenu(id) { currentView = views.find(v => v.createdAt == id); document.getElementById('app').innerHTML = `<h1 class="main-heading">${currentView.name}</h1><div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px;"><button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="exportData()">Export Final (.xlsx)</button><button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="window.open(window.location.origin+window.location.pathname+'?view=${id}','_blank')">View Presentation</button><button class="blue-btn" style="height:140px; font-size:1.2rem;" onclick="renderEditCanvas()">Edit Layout</button><button class="blue-btn" style="height:140px; font-size:1.2rem; background:var(--danger);" onclick="deleteView('${id}')">Delete View</button></div><button onclick="renderHome()" style="margin-top:30px; width:100%; background:none; text-decoration:underline; border:none; color:var(--slate);">Back to Home</button>`; }
 function renderEditCanvas() { document.getElementById('app').innerHTML = `<div class="canvas-header"><h2 style="margin:0">${currentView.name}</h2><div class="header-right"><button class="orange-btn" onclick="uploadExcel()">Upload Excel</button><button class="blue-btn" onclick="openMenu('${currentView.createdAt}')">Save & Exit</button></div></div><div class="canvas-16-9" id="canvas-container"><div class="grid-overlay" id="grid"></div><div id="boxes-layer"></div></div><div style="text-align:center; margin-top:20px; color:var(--slate); font-weight:600;">Dimension Bar (Drag a size to the grid)</div><div style="display:flex; justify-content:center; gap:12px; margin-top:15px; flex-wrap:wrap;">${['2x2','2x1','4x1','6x1','3x3','4x4'].map(s => `<button class="size-btn" onmousedown="startDragNew(event, ${s.split('x')[0]}, ${s.split('x')[1]})">${s}</button>`).join('')}</div>`; const grid = document.getElementById('grid'); grid.innerHTML = ''; for (let i = 0; i < 24; i++) grid.appendChild(document.createElement('div')).className = 'grid-cell'; drawBoxes(); initDragListeners(); }
 function drawBoxes() { const layer = document.getElementById('boxes-layer'); if (!layer) return; layer.innerHTML = ''; currentView.boxes.forEach((box, i) => { const div = document.createElement('div'); div.className = 'box-instance'; div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`; div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`; div.style.background = box.bgColor; div.style.color = box.textColor; div.innerHTML = `<div class="box-title">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${box.isVar ? '<' + box.textVal + '>' : box.textVal}</div>`; div.onmousedown = (e) => startDragExisting(e, i); layer.appendChild(div); }); }
+function startPresentation() { if (!currentView.history) currentView.history = []; currentRowIndex = 0; renderSlide(); window.addEventListener('keydown', (e) => { if (e.key === 'ArrowRight' || e.key === ' ') nextSlide(); if (e.key === 'ArrowLeft') prevSlide(); }); }
 function renderSlide() { const row = currentView.data[currentRowIndex] || {}; document.getElementById('app').innerHTML = `<div class="presentation-fullscreen"><div class="slide-fit" id="slide-canvas"></div><div class="floating-controls"><button class="icon-btn" onclick="window.close()">${iconHome}</button><div class="slide-counter">${currentRowIndex+1} / ${currentView.data.length}</div><div class="nav-group-right"><button class="icon-btn" onclick="prevSlide()">${iconLeft}</button><button class="icon-btn" onclick="nextSlide()">${iconRight}</button></div></div></div>`; const canvas = document.getElementById('slide-canvas'); currentView.boxes.forEach((box, i) => { const div = document.createElement('div'); div.className = 'box-instance'; div.style.left = `${(box.x/6)*100}%`; div.style.top = `${(box.y/4)*100}%`; div.style.width = `${(box.w/6)*100}%`; div.style.height = `${(box.h/4)*100}%`; div.style.background = box.bgColor; div.style.color = box.textColor; const val = box.isVar ? (row[box.textVal] || '---') : box.textVal; div.innerHTML = `<div class="box-title">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${val}</div>`; div.onclick = () => openDetailModal(i, val); canvas.appendChild(div); }); }
 function openDetailModal(idx, val) { const box = currentView.boxes[idx]; const overlay = document.createElement('div'); overlay.className = 'popup-overlay'; const editBtn = box.isVar ? `<button class="orange-btn" onclick="editLiveValue(${idx})">Edit Value</button>` : ''; overlay.innerHTML = `<div class="detail-modal"><div style="display:flex; justify-content:space-between; align-items:center;"><h2>${box.title}</h2><div style="font-size:2rem; cursor:pointer;" onclick="closePop()">✕</div></div><div class="detail-scroll-content">${val}</div><div style="display:flex; justify-content:flex-end; gap:10px;">${editBtn}<button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Close</button></div></div>`; document.body.appendChild(overlay); }
 function uploadExcel() { const i = document.createElement('input'); i.type = 'file'; i.accept = '.xlsx,.xls'; i.onchange = (e) => { const r = new FileReader(); r.onload = (evt) => { const wb = XLSX.read(evt.target.result, {type:'binary'}); const data = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]); currentView.headers = Object.keys(data[0] || {}); currentView.data = data; currentView.history = []; saveAll(); renderEditCanvas(); }; r.readAsBinaryString(e.target.files[0]); }; i.click(); }
