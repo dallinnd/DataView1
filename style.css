@@ -1,56 +1,110 @@
-/* --- DATA VIEW SYSTEM VARIABLES --- */
+/* --- DATA VIEW MODERN GLASS ENGINE --- */
 :root {
-  --primary: #3b82f6;
-  --success: #10b981;
-  --orange: #f97316;
-  --danger: #ef4444;
-  --dark: #1e293b;
+  /* Gradients for UI Elements */
+  --primary-grad: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --success-grad: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+  --orange-grad: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --danger-grad: linear-gradient(135deg, #ff0844 0%, #ffb199 100%);
+  
+  /* Solid Colors */
+  --dark: #0f172a;
   --slate: #64748b;
-  --bg-soft: #f8fafc;
+  --bg-soft: #f1f5f9;
   --white: #ffffff;
-  --border: #cbd5e1;
+  --glass: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.4);
 }
 
-/* --- BASE STYLES --- */
 body { 
   margin: 0; 
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+  font-family: 'Inter', system-ui, -apple-system, sans-serif; 
   background: var(--bg-soft); 
   color: var(--dark); 
   overflow-x: hidden; 
+  line-height: 1.5;
 }
 
 #app { 
-  padding: 20px; 
+  padding: 30px; 
   max-width: 1400px; 
   margin: 0 auto; 
 }
 
 .main-heading { 
   text-align: center; 
-  font-size: 2.5rem; 
+  font-size: 2.8rem; 
   color: var(--dark); 
-  margin: 30px 0 15px 0; 
-  font-weight: 800; 
-  letter-spacing: -0.02em; 
+  margin: 40px 0 20px 0; 
+  font-weight: 900; 
+  letter-spacing: -0.03em; 
 }
 
-/* --- DASHBOARD CANVAS (16:9) --- */
+/* --- MODERN GLASSY BUTTONS --- */
+button { 
+  cursor: pointer; 
+  border: none; 
+  font-weight: 700; 
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+  display: inline-flex; 
+  align-items: center; 
+  justify-content: center;
+  text-transform: uppercase; 
+  letter-spacing: 0.8px;
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+button:active { transform: scale(0.96); }
+button:hover { transform: translateY(-3px); box-shadow: 0 15px 25px rgba(0, 0, 0, 0.15); }
+
+.primary-btn { 
+  background: var(--success-grad); 
+  color: white; 
+  width: 100%; 
+  padding: 24px; 
+  font-size: 1.25rem; 
+  border-radius: 20px; 
+}
+
+.blue-btn { 
+  background: var(--primary-grad); 
+  color: white; 
+  padding: 20px 36px; 
+  font-size: 1rem; 
+  border-radius: 18px; 
+}
+
+.orange-btn { 
+  background: var(--orange-grad); 
+  color: white; 
+  padding: 20px 36px; 
+  font-size: 1rem; 
+  border-radius: 18px; 
+}
+
+.size-btn { 
+  background: var(--slate); 
+  color: white; 
+  padding: 14px 22px; 
+  border-radius: 14px; 
+  font-family: monospace;
+}
+
+/* --- DASHBOARD CANVAS --- */
 .canvas-header { 
   display: flex; 
   justify-content: space-between; 
   align-items: center; 
-  margin-bottom: 20px; 
+  margin-bottom: 30px; 
 }
 
 .canvas-16-9 { 
   position: relative; 
   width: 100%; 
   aspect-ratio: 16 / 9; 
-  background: var(--white); 
-  border-radius: 20px; 
-  box-shadow: 0 10px 30px rgba(0,0,0,0.08); 
-  border: 1px solid var(--border); 
+  background: white; 
+  border-radius: 35px; 
+  box-shadow: 0 30px 60px -12px rgba(0,0,0,0.12); 
+  border: 1px solid var(--glass-border); 
   overflow: hidden;
 }
 
@@ -64,46 +118,42 @@ body {
   pointer-events: none; 
 }
 
-.grid-cell { 
-  border: 1px dashed rgba(203, 213, 225, 0.5); 
-  box-sizing: border-box; 
-}
+.grid-cell { border: 1px dashed rgba(203, 213, 225, 0.4); }
 
-/* --- DRAGGABLE BOXES --- */
+/* --- GLASS DATA BOXES --- */
 .box-instance { 
   position: absolute; 
   z-index: 2; 
   display: flex; 
   flex-direction: column; 
   align-items: center; 
-  border: 2px solid var(--dark); 
-  border-radius: 16px; 
+  border: 1px solid var(--glass-border); 
+  border-radius: 30px; /* Super rounded corners */
   box-sizing: border-box; 
   overflow: hidden; 
-  padding: 12px; 
-  cursor: grab; 
-  background: var(--white); 
+  padding: 25px; /* Increased internal padding */
+  background: var(--glass); 
+  backdrop-filter: blur(15px); /* The Glass effect */
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
 }
 
 .box-instance.dragging { 
   z-index: 9999 !important; 
-  cursor: grabbing !important; 
-  opacity: 0.85; 
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2); 
-  pointer-events: none; 
+  opacity: 0.9; 
+  box-shadow: 0 25px 50px rgba(0,0,0,0.25); 
+  transform: scale(1.05);
 }
 
 .box-title { 
   width: 100%; 
   text-align: center; 
-  font-size: 1.1rem; 
-  font-weight: 500; 
-  opacity: 0.7; 
-  margin-bottom: 6px; 
-  flex-shrink: 0; 
-  white-space: nowrap; 
-  overflow: hidden; 
-  text-overflow: ellipsis; 
+  font-size: 1rem; 
+  font-weight: 600; 
+  color: var(--slate);
+  margin-bottom: 10px; 
+  text-transform: uppercase; 
+  letter-spacing: 1.5px;
   pointer-events: none; 
 }
 
@@ -114,212 +164,136 @@ body {
   justify-content: center; 
   width: 100%; 
   text-align: center; 
-  font-weight: 700; 
+  font-weight: 800; 
   line-height: 1.1; 
-  word-break: break-word; 
   pointer-events: none; 
 }
 
-/* --- OVERLAYS & MODALS --- */
+/* --- OVERLAYS & EDITOR --- */
 .popup-overlay { 
   position: fixed; 
   inset: 0; 
-  background: rgba(15, 23, 42, 0.8); 
+  background: rgba(15, 23, 42, 0.7); 
   display: flex; 
   align-items: center; 
   justify-content: center; 
   z-index: 9000; 
-  backdrop-filter: blur(6px); 
+  backdrop-filter: blur(12px); 
 }
 
-/* --- EDITOR WINDOW --- */
 .editor-window { 
   background: var(--white); 
-  width: 94%; 
-  height: 90%; 
-  border-radius: 30px; 
+  width: 95%; 
+  height: 92%; 
+  border-radius: 40px; 
   display: flex; 
-  padding: 30px; 
-  gap: 30px; 
+  padding: 40px; 
+  gap: 40px; 
   box-sizing: border-box; 
-  overflow: hidden; 
 }
 
 .editor-preview-area { 
   flex: 2; 
   display: flex; 
-  flex-direction: column; 
   align-items: center; 
   justify-content: center; 
-  background: #f1f5f9; 
-  border-radius: 24px; 
+  background: #f8fafc; 
+  border-radius: 30px; 
   position: relative; 
-}
-
-#prev-container { 
-  width: 100%; 
-  height: 100%; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
+  border: 2px inset rgba(0,0,0,0.02);
 }
 
 #prev { 
-  /* This scales the 1:1 box units down to fit the UI */
   transform: scale(0.5); 
-  box-shadow: 0 15px 40px rgba(0,0,0,0.15); 
-  border: 4px solid var(--dark); 
-  border-radius: 20px; 
+  box-shadow: 0 30px 60px rgba(0,0,0,0.15); 
+  border-radius: 30px; 
   display: flex; 
   flex-direction: column; 
   background: var(--white); 
-  flex-shrink: 0; 
 }
 
-.editor-controls-area { 
-  flex: 1; 
-  overflow-y: auto; 
-  padding-right: 15px; 
-}
+.editor-controls-area { flex: 1; overflow-y: auto; padding-right: 20px; }
 
-.property-group { 
-  margin-bottom: 25px; 
-  padding-bottom: 20px; 
-  border-bottom: 1px solid #f1f5f9; 
-}
-
-.property-group h4 { 
-  margin: 0 0 12px 0; 
-  font-size: 0.8rem; 
-  color: var(--slate); 
-  text-transform: uppercase; 
-  letter-spacing: 0.1em; 
-}
-
-/* --- PRESENTATION DETAIL MODAL (LARGE) --- */
+/* --- PRESENTATION DETAIL MODAL --- */
 .detail-modal { 
-  background: var(--white); 
+  background: rgba(255, 255, 255, 0.95); 
   width: 90%; 
-  max-width: 800px; 
-  border-radius: 32px; 
-  padding: 60px 40px; 
+  max-width: 850px; 
+  border-radius: 45px; 
+  padding: 70px 50px; 
   text-align: center; 
-  box-shadow: 0 30px 60px rgba(0,0,0,0.4); 
+  box-shadow: 0 40px 100px rgba(0,0,0,0.3); 
+  border: 1px solid white;
 }
 
 .detail-title { 
-  font-size: 1.6rem; 
+  font-size: 1.8rem; 
   color: var(--slate); 
-  margin-bottom: 20px; 
-  text-transform: uppercase; 
-  font-weight: 600; 
+  margin-bottom: 25px; 
+  font-weight: 500; 
+  letter-spacing: 3px;
 }
 
 .detail-value { 
-  font-size: 5rem; 
-  font-weight: 800; 
+  font-size: 5.5rem; 
+  font-weight: 900; 
   color: var(--dark); 
-  margin-bottom: 40px; 
+  margin-bottom: 50px; 
   line-height: 1; 
-  word-break: break-all;
+  background: var(--primary-grad);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent; /* Gradient Text for the Value */
 }
 
-/* --- INTERACTIVE ELEMENTS --- */
-.color-grid { display: flex; gap: 10px; flex-wrap: wrap; }
-
-.circle { 
-  width: 36px; 
-  height: 36px; 
-  border-radius: 50%; 
-  border: 2px solid var(--white); 
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1); 
-  cursor: pointer; 
-}
-
-.pills-container { 
-  display: flex; 
-  flex-wrap: wrap; 
-  gap: 10px; 
-  max-height: 250px; 
-  overflow-y: auto; 
-}
-
-.var-pill { 
-  padding: 10px 18px; 
-  background: var(--white); 
-  border: 1px solid var(--border); 
-  border-radius: 50px; 
-  font-size: 0.9rem; 
-  cursor: pointer; 
-  transition: 0.2s; 
-}
-
-.var-pill.selected { 
-  background: var(--orange); 
-  color: var(--white); 
-  border-color: var(--orange); 
-}
-
-button { 
-  cursor: pointer; 
-  border: none; 
-  border-radius: 12px; 
-  font-weight: 600; 
-  transition: all 0.2s; 
-}
-
-.primary-btn { 
-  background: var(--success); 
-  color: var(--white); 
-  width: 100%; 
-  padding: 16px; 
-  font-size: 1.1rem; 
-}
-
-.blue-btn { background: var(--primary); color: var(--white); padding: 10px 20px; }
-.orange-btn { background: var(--orange); color: var(--white); padding: 10px 20px; }
-.size-btn { background: var(--slate); color: var(--white); padding: 12px; cursor: grab; }
-
-/* --- PRESENTATION WRAPPER --- */
-.presentation-fullscreen { 
-  position: fixed; 
-  inset: 0; 
-  background: var(--bg-soft); 
-  z-index: 8000; 
-}
-
-.slide-fit { 
-  position: relative; 
-  width: 100%; 
-  height: 100%; 
-}
-
+/* --- NAVIGATION CONTROLS --- */
 .floating-controls { 
   position: fixed; 
-  bottom: 30px; 
+  bottom: 40px; 
   left: 50%; 
   transform: translateX(-50%); 
   display: flex; 
   align-items: center; 
-  gap: 20px; 
-  background: rgba(255, 255, 255, 0.95); 
-  padding: 12px 25px; 
-  border-radius: 50px; 
-  box-shadow: 0 10px 25px rgba(0,0,0,0.1); 
+  gap: 25px; 
+  background: rgba(255, 255, 255, 0.8); 
+  backdrop-filter: blur(20px);
+  padding: 15px 35px; 
+  border-radius: 60px; 
+  box-shadow: 0 15px 35px rgba(0,0,0,0.15); 
   z-index: 10000; 
+  border: 1px solid rgba(255,255,255,0.5);
 }
 
-/* Input Styles */
+/* Inputs & Pills */
 input[type="text"] {
   width: 100%;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 1rem;
-  box-sizing: border-box;
+  padding: 18px;
+  border: 2px solid #e2e8f0;
+  border-radius: 18px;
+  font-size: 1.1rem;
+  transition: all 0.3s;
 }
 
 input[type="text"]:focus {
-  outline: 2px solid var(--primary);
-  border-color: transparent;
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  outline: none;
+}
+
+.color-grid { display: flex; gap: 12px; flex-wrap: wrap; padding: 10px 0; }
+.circle { width: 42px; height: 42px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); cursor: pointer; }
+
+.var-pill { 
+  padding: 12px 22px; 
+  background: white; 
+  border: 2px solid #e2e8f0; 
+  border-radius: 50px; 
+  font-size: 0.95rem; 
+  font-weight: 600;
+}
+
+.var-pill.selected { 
+  background: var(--orange-grad); 
+  color: white; 
+  border-color: transparent; 
+  box-shadow: 0 10px 20px rgba(240, 147, 251, 0.3);
 }
