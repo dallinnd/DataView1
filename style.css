@@ -1,4 +1,4 @@
-/* --- DATA VIEW PRO: CLICK-TO-ADD SYSTEM --- */
+/* --- DATA VIEW PRO: MODERN SYSTEM STYLES --- */
 :root {
   --primary-grad: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --success-grad: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
@@ -15,7 +15,7 @@ body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(-
 #app { height: 100vh; display: flex; flex-direction: column; }
 .main-content { display: flex; flex: 1; overflow: hidden; }
 
-/* --- CENTERED MENUS --- */
+/* --- CENTERED MENUS (50% WIDTH) --- */
 .home-container { width: 50%; margin: 0 auto; padding: 60px 0; display: flex; flex-direction: column; box-sizing: border-box; }
 @media (max-width: 1024px) { .home-container { width: 85%; } }
 
@@ -32,7 +32,6 @@ body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(-
   box-shadow: 10px 0 30px rgba(0,0,0,0.03); z-index: 100; overflow-y: auto; box-sizing: border-box;
 }
 
-/* Modern Rounded Inputs */
 input[type="text"], select {
     width: 100%; padding: 14px 18px; border-radius: 20px; /* High rounding */
     border: 1px solid #e2e8f0; font-size: 0.95rem; background: #f8fafc;
@@ -41,7 +40,7 @@ input[type="text"], select {
 input[type="text"]:focus { border-color: #667eea; background: white; box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1); }
 
 .property-group { margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #f1f5f9; }
-.property-group h4 { margin: 0 0 12px 0; font-size: 0.8rem; color: var(--slate); text-transform: uppercase; letter-spacing: 0.1em; }
+.property-group h4 { margin: 0 0 10px 0; font-size: 0.8rem; color: var(--slate); text-transform: uppercase; letter-spacing: 0.1em; }
 
 /* --- CANVAS & BOXES --- */
 .canvas-area { flex: 1; padding: 40px; display: flex; flex-direction: column; align-items: center; position: relative; overflow-y: auto; }
@@ -74,8 +73,8 @@ button { cursor: pointer; border: none; font-weight: 700; border-radius: 20px; t
 .primary-btn { background: var(--success-grad); width: 100%; padding: 22px; font-size: 1.1rem; }
 .blue-btn { background: var(--primary-grad); padding: 15px 25px; }
 .orange-btn { background: var(--orange-grad); padding: 15px 25px; }
-.danger-btn { background: var(--danger-grad); padding: 15px 25px; }
-.size-btn { background: var(--slate); padding: 12px; font-family: monospace; font-size: 0.9rem; color: white !important; }
+.danger-btn { background: var(--danger-grad); padding: 15px 25px; color: white !important; }
+.size-btn { background: var(--slate); padding: 12px; font-family: monospace; font-size: 0.9rem; }
 
 /* --- PRESENTATION NAV --- */
 .presentation-nav {
@@ -83,6 +82,7 @@ button { cursor: pointer; border: none; font-weight: 700; border-radius: 20px; t
   background: rgba(15, 23, 42, 0.9); padding: 8px 12px; border-radius: 15px;
   display: flex; gap: 8px; align-items: center;
   box-shadow: 0 10px 20px rgba(0,0,0,0.2); z-index: 10000;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 .presentation-nav button { background: transparent; padding: 6px; border-radius: 8px; }
 .presentation-nav svg { width: 18px; height: 18px; fill: white; }
@@ -90,3 +90,11 @@ button { cursor: pointer; border: none; font-weight: 700; border-radius: 20px; t
 
 .popup-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; backdrop-filter: blur(12px); }
 .detail-modal { background: white; width: 95%; height: 92%; border-radius: 35px; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
+.detail-value { font-size: 6rem; font-weight: 900; margin-bottom: 40px; line-height: 1; word-break: break-all; }
+
+/* Grid Helpers */
+.color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.circle { width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; }
+.pills-container { display: flex; flex-wrap: wrap; gap: 8px; max-height: 250px; overflow-y: auto; }
+.var-pill { padding: 10px 18px; background: white; border: 1px solid #e2e8f0; border-radius: 50px; font-size: 0.85rem; cursor: pointer; color: var(--dark); }
+.var-pill.selected { background: var(--orange-grad); color: white; border-color: transparent; }
