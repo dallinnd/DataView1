@@ -90,7 +90,7 @@ function openMenu(id) {
         </div>`;
 }
 
-// --- EDITOR ENGINE ---
+// --- UPDATED EDITOR ENGINE WITH 1x1 AND 3x1 ---
 function renderEditCanvas() {
     const app = document.getElementById('app');
     app.innerHTML = `
@@ -101,10 +101,17 @@ function renderEditCanvas() {
                     <input type="text" value="${currentView.name}" oninput="currentView.name=this.value; saveAll();">
                 </div>
                 <div class="property-group">
-                    <h4>Add Element</h4>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
-                        ${['2x2','2x1','4x1','6x1','3x3','4x4'].map(s => `<button class="size-btn" onclick="selectSize(${s.split('x')[0]},${s.split('x')[1]})">${s}</button>`).join('')}
+                    <h4>Add Element (Size)</h4>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                        ${['1x1','2x1','3x1','4x1','6x1','2x2','3x3','4x4'].map(s => `
+                            <button class="size-btn" onclick="selectSize(${s.split('x')[0]},${s.split('x')[1]})">
+                                ${s}
+                            </button>
+                        `).join('')}
                     </div>
+                    <p style="font-size:0.7rem; color:var(--slate); margin-top:10px;">
+                        Select a size above, then click a dashed cell on the grid to place it.
+                    </p>
                 </div>
                 <div class="property-group">
                     <h4>Data Management</h4>
@@ -120,7 +127,8 @@ function renderEditCanvas() {
                 </div>
             </main>
         </div>`;
-    drawGrid(); drawBoxes();
+    drawGrid(); 
+    drawBoxes();
 }
 
 function drawGrid() {
