@@ -1,6 +1,6 @@
 /**
- * DATA VIEW PRO - MASTER ENGINE v54.0
- * Verified Data Persistence & Presentation Fix
+ * DATA VIEW PRO - MASTER ENGINE v55.0
+ * Verified Data Persistence & Popup Text Fix
  */
 
 let views = [];
@@ -23,7 +23,7 @@ const iconRight = `<svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4
 
 // --- STARTUP ---
 document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('dataView_master_v54');
+    const saved = localStorage.getItem('dataView_master_v55');
     if (saved) views = JSON.parse(saved);
     
     const params = new URLSearchParams(window.location.search);
@@ -35,12 +35,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function triggerSave() {
-    localStorage.setItem('dataView_master_v54', JSON.stringify(views));
+    localStorage.setItem('dataView_master_v55', JSON.stringify(views));
     const badge = document.getElementById('save-badge');
-    if (badge) { badge.style.opacity = "1"; setTimeout(() => badge.style.opacity = "0", 1200); }
+    if (badge) { badge.style.opacity = "1"; setTimeout(() => badge.style.opacity = "0", 1000); }
 }
 
-// --- MENUS ---
+// --- NAVIGATION ---
 function renderHome() {
     selectedBoxIdx = null;
     const app = document.getElementById('app');
@@ -69,7 +69,7 @@ function renderEditCanvas() {
 
 function renderSidebarContent() {
     const isGlobal = selectedBoxIdx === null;
-    const excelBtnText = (currentView.data && currentView.data.length > 0) ? 'Change Excel' : 'Upload Excel Sheet';
+    const excelBtnText = (currentView.data && currentView.data.length > 0) ? 'Change Excel Data' : 'Upload Excel Sheet';
     return `<div class="sidebar-header"><h3>${isGlobal ? 'Global' : 'Edit Box'}</h3><div id="save-badge">Saved</div>${!isGlobal ? '<button onclick="deselectBox()" style="background:none; color:var(--dark); font-size:1.2rem; padding:0;">✕</button>' : ''}</div>${isGlobal ? renderGlobalControls(excelBtnText) : renderBoxControls()}`;
 }
 
@@ -90,7 +90,7 @@ function renderBoxControls() {
     return `<div class="property-group"><h4>Label</h4><input type="text" value="${box.title}" oninput="syncBoxAttr(${selectedBoxIdx}, 'title', this.value)"></div><div class="property-group"><h4>Mode</h4><select onchange="setBoxMode(${selectedBoxIdx}, this.value === 'var')"><option value="const" ${!box.isVar ? 'selected' : ''}>Static</option><option value="var" ${box.isVar ? 'selected' : ''}>Variable</option></select></div><div class="property-group"><h4>Content</h4>${contentSection}</div><div class="property-group"><h4>Appearance</h4><div class="color-grid">${bgPresets.map(c => `<div class="circle" style="background:${c}" onclick="syncBoxAttr(${selectedBoxIdx}, 'bgColor', '${c}')"></div>`).join('')}</div><p style="margin-top:10px; font-size:0.7rem;">Text Color</p><div class="color-grid">${textPresets.map(c => `<div class="circle" style="background:${c}" onclick="syncBoxAttr(${selectedBoxIdx}, 'textColor', '${c}')"></div>`).join('')}</div><div style="display:flex; align-items:center; gap:10px; margin-top:20px;"><button class="blue-btn" style="padding:8px 15px;" onclick="syncBoxAttr(${selectedBoxIdx}, 'fontSize', ${box.fontSize - 4})">-</button><span>${box.fontSize}px</span><button class="blue-btn" style="padding:8px 15px;" onclick="syncBoxAttr(${selectedBoxIdx}, 'fontSize', ${box.fontSize + 4})">+</button></div></div><button class="danger-btn" style="width:100%;" onclick="deleteBox(${selectedBoxIdx})">Delete Box</button>`;
 }
 
-// --- RENDER DESIGN ---
+// --- RENDER DESIGN CANVAS ---
 function addNewBoxDirectly(w, h) {
     const hasH = currentView.headers && currentView.headers.length > 0;
     currentView.boxes.push({ x: 0, y: 0, w: parseInt(w), h: parseInt(h), title: 'Label', textVal: hasH ? currentView.headers[0] : 'Value', isVar: hasH, bgColor: 'var(--light-grey)', textColor: '#000', fontSize: 24 });
@@ -110,7 +110,7 @@ function drawBoxes() {
     });
 }
 
-// --- DRAG ---
+// --- DRAG LOGIC ---
 function startDragExisting(e, idx) {
     e.preventDefault(); dragIdx = idx; dragStartX = e.clientX; dragStartY = e.clientY;
     const original = e.currentTarget; const rect = original.getBoundingClientRect();
@@ -138,7 +138,7 @@ function handleMouseUp(e) {
 window.addEventListener('mousemove', (e) => { if (!draggingElement) return; const rect = document.getElementById('canvas-container').getBoundingClientRect(); draggingElement.style.left = `${e.clientX - rect.left - offset.x}px`; draggingElement.style.top = `${e.clientY - rect.top - offset.y}px`; });
 window.addEventListener('mouseup', handleMouseUp);
 
-// --- PRESENTATION ENGINE (PERSISTENCE FIXED) ---
+// --- PRESENTATION ENGINE ---
 function startPresentation() {
     document.getElementById('app').innerHTML = `<div class="presentation-fullscreen"><div class="slide-fit" id="slide-canvas" style="background:${currentView.canvasBg || '#ffffff'}"></div><div class="presentation-nav"><button onclick="window.close()">${iconHome}</button><span>${currentRowIndex+1} / ${currentView.data.length}</span><button onclick="prevSlide()">${iconLeft}</button><button onclick="nextSlide()">${iconRight}</button></div></div>`;
     renderSlideContent();
@@ -161,7 +161,8 @@ function renderSlideContent() {
 function openLargePopup(idx, val) { 
     const box = currentView.boxes[idx]; 
     const overlay = document.createElement('div'); overlay.className = 'popup-overlay'; 
-    overlay.innerHTML = `<div class="detail-modal"><div style="font-size:1.4rem; color:var(--slate); margin-bottom:10px; text-transform:uppercase;">${box.title}</div><div style="font-size:6rem; font-weight:900; margin-bottom:40px; line-height:1; word-break:break-all; color:${box.textColor}">${val}</div><div style="display:flex; gap:20px;">${box.isVar ? `<button class="orange-btn" onclick="editLiveValue(${idx})">Edit Data</button>` : ''}<button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Close</button></div></div>`; 
+    // FIX: Removed dynamic color setting so CSS standard (Black) takes over
+    overlay.innerHTML = `<div class="detail-modal"><div style="font-size:1.4rem; color:var(--slate); margin-bottom:10px; text-transform:uppercase;">${box.title}</div><div class="detail-value">${val}</div><div style="display:flex; gap:20px;">${box.isVar ? `<button class="orange-btn" onclick="editLiveValue(${idx})">Edit Data</button>` : ''}<button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Close</button></div></div>`; 
     document.body.appendChild(overlay); 
 }
 
@@ -169,7 +170,6 @@ function editLiveValue(idx) {
     const box = currentView.boxes[idx];
     const oldVal = currentView.data[currentRowIndex][box.textVal] || '---';
     const newVal = prompt(`Update Variable "${box.textVal}" for Row ${currentRowIndex+1}:`, oldVal);
-    
     if (newVal !== null && newVal !== oldVal) {
         if (!currentView.history) currentView.history = [];
         currentView.history.push({ time: new Date().toLocaleString(), row: currentRowIndex + 1, col: box.textVal, old: oldVal, new: newVal });
@@ -197,7 +197,7 @@ function updateViewName(val) { currentView.name = val; triggerSave(); }
 function updateCanvasBg(c) { currentView.canvasBg = c; document.getElementById('canvas-container').style.background = c; triggerSave(); }
 function deselectBox() { selectedBoxIdx = null; varSearchTerm = ""; refreshSidebar(); drawBoxes(); }
 function selectBox(idx) { selectedBoxIdx = idx; varSearchTerm = ""; refreshSidebar(); drawBoxes(); }
-function syncBoxAttr(idx, key, val) { currentView.boxes[idx][key] = val; triggerSave(); drawBoxes(); if(key==='fontSize' || key==='textVal' || key==='bgColor' || key==='textColor') refreshSidebar(); }
+function syncBoxAttr(idx, key, val) { currentView.boxes[idx][key] = val; triggerSave(); drawBoxes(); if(key==='fontSize' || key==='textVal') refreshSidebar(); }
 function setBoxMode(idx, mode) { currentView.boxes[idx].isVar = mode; triggerSave(); refreshSidebar(); drawBoxes(); }
 function refreshSidebar() { const sb = document.getElementById('sidebar'); if(sb) sb.innerHTML = renderSidebarContent(); }
 function closePop() { const p = document.querySelector('.popup-overlay'); if(p) p.remove(); }
