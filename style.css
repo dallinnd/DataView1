@@ -1,0 +1,97 @@
+:root {
+  --primary: #3b82f6;
+  --success: #10b981;
+  --orange: #f97316;
+  --danger: #ef4444;
+  --dark: #1e293b;
+  --slate: #64748b;
+  --bg-soft: #f8fafc;
+}
+
+body { margin: 0; font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-soft); color: var(--dark); overflow-x: hidden; }
+
+/* Main Branding */
+.main-heading { text-align: center; font-size: 2.5rem; color: var(--dark); margin: 40px 0 20px 0; font-weight: 800; letter-spacing: -0.02em; }
+
+#app { padding: 20px; max-width: 1200px; margin: 0 auto; }
+
+/* Buttons */
+button { cursor: pointer; border: none; border-radius: 12px; font-weight: 600; transition: 0.2s; }
+.primary-btn { background: var(--success); color: white; width: 100%; padding: 18px; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); }
+.orange-btn { background: var(--orange); color: white; padding: 10px 20px; }
+.blue-btn { background: var(--primary); color: white; padding: 10px 20px; }
+
+/* Canvas & Grid */
+.canvas-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.header-right { display: flex; gap: 12px; }
+.canvas-16-9 { position: relative; width: 100%; aspect-ratio: 16 / 9; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: visible; border: 1px solid #cbd5e1; }
+.grid-overlay { display: grid; grid-template-columns: repeat(6, 1fr); grid-template-rows: repeat(4, 1fr); position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.grid-cell { border: 1px dashed #cbd5e1; box-sizing: border-box; }
+
+/* Box Layout (Rounded Corners) */
+.box-instance { 
+    position: absolute; 
+    z-index: 2; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    border: 2px solid var(--dark); 
+    border-radius: 15px; /* Rounded Corners */
+    box-sizing: border-box; 
+    overflow: hidden; 
+    padding: 10px; 
+    cursor: grab; 
+    background: white; 
+}
+
+.box-instance.dragging { 
+    z-index: 9999 !important; 
+    cursor: grabbing; 
+    opacity: 0.9; 
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    pointer-events: none; 
+}
+
+.box-instance.out-of-bounds { 
+    border: 3px solid var(--danger) !important; 
+    background: rgba(239, 68, 68, 0.1) !important; 
+}
+
+.box-title { width: 100%; text-align: center; font-size: 28px; font-weight: 500; opacity: 0.8; margin-bottom: 5px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.box-content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; text-align: center; font-weight: bold; line-height: 1.1; word-break: break-word; pointer-events: none; }
+
+/* Dimension Bar */
+.size-btn { background: #64748b; color: white; padding: 12px 18px; border-radius: 12px; cursor: grab; font-family: monospace; font-size: 1rem; }
+
+/* Presentation Navigation */
+.floating-controls {
+    position: fixed; bottom: 20px; left: 20px;
+    display: flex; align-items: center; gap: 15px;
+    background: rgba(0, 0, 0, 0.45); backdrop-filter: blur(10px);
+    padding: 8px 16px; border-radius: 40px; z-index: 5000;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.nav-group-right { display: flex; align-items: center; gap: 4px; }
+.icon-btn { background: transparent; border: none; cursor: pointer; color: white; display: flex; align-items: center; padding: 4px; }
+.icon-btn svg { width: 22px; height: 22px; fill: currentColor; }
+.slide-counter { color: white; font-weight: bold; font-size: 0.85rem; min-width: 45px; text-align: center; }
+
+/* Editor & Popups */
+.popup-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 6000; backdrop-filter: blur(4px); }
+.editor-window { background: white; width: 95%; height: 90%; border-radius: 24px; display: flex; padding: 25px; gap: 20px; box-sizing: border-box; overflow: hidden; }
+.editor-preview-area { flex: 2; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; background: #f1f5f9; border-radius: 20px; padding: 25px; gap: 15px; }
+#prev { display: flex; flex-direction: column; align-items: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border: 2px solid var(--dark); width: 100%; height: auto; max-height: 65%; aspect-ratio: var(--box-w) / var(--box-h); background: white; }
+
+.editor-controls-area { flex: 1.2; overflow-y: auto; padding-left: 15px; border-left: 1px solid #eee; }
+.property-group { margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+.segmented-control { display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px; margin-bottom: 15px; }
+.segment-btn { flex: 1; padding: 10px; font-size: 0.85rem; border-radius: 8px; background: transparent; color: var(--slate); }
+.segment-btn.active { background: white; color: var(--orange); box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+
+/* Color Grids */
+.color-grid { display: flex; gap: 8px; overflow-x: auto; padding: 5px 0; scrollbar-width: none; }
+.circle { min-width: 32px; height: 32px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; flex-shrink: 0; }
+
+/* Detail Modal */
+.detail-modal { background: white; width: 85%; max-height: 85%; border-radius: 24px; display: flex; flex-direction: column; padding: 30px; overflow: hidden; }
+.detail-scroll-content { flex: 1; overflow-y: auto; font-size: 2.8rem; font-weight: bold; background: #f8fafc; padding: 25px; border-radius: 15px; margin: 20px 0; word-break: break-word; line-height: 1.2; }
