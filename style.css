@@ -1,4 +1,4 @@
-/* --- DATA VIEW PRO: CENTERED & POLISHED --- */
+/* --- DATA VIEW PRO: FINAL SYSTEM STYLES --- */
 :root {
   --primary-grad: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --success-grad: linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
@@ -25,7 +25,6 @@ body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(-
     box-sizing: border-box;
 }
 
-/* Responsive adjustment for mobile */
 @media (max-width: 1024px) { .home-container { width: 80%; } }
 @media (max-width: 600px) { .home-container { width: 95%; } }
 
@@ -65,7 +64,7 @@ body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(-
     box-shadow: 0 25px 60px rgba(0,0,0,0.05); overflow: hidden;
 }
 
-/* --- BOXES --- */
+/* --- BOXES & CENTERING --- */
 .box-instance { 
   position: absolute; display: flex; flex-direction: column; align-items: center; 
   border-radius: 24px; box-sizing: border-box; padding: 15px; 
@@ -88,11 +87,11 @@ body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: var(-
     word-wrap: break-word; pointer-events: none;
 }
 
-/* GHOST BOX DURING DRAG */
+/* Ghost Box - Size Labels and Outline */
 .box-instance.dragging { 
     z-index: 9999 !important; border: 3px solid #000 !important; 
     background: var(--light-grey) !important;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3); pointer-events: none; opacity: 0.9;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3); pointer-events: none; opacity: 0.95;
 }
 
 /* --- BUTTONS --- */
@@ -103,11 +102,10 @@ button { cursor: pointer; border: none; font-weight: 700; border-radius: 18px; t
 .danger-btn { background: var(--danger-grad); padding: 15px 25px; color: white !important; }
 .size-btn { background: var(--slate); padding: 12px; font-family: monospace; font-size: 0.9rem; }
 
-/* --- PRESENTATION NAV (Bottom-Left) --- */
+/* --- PRESENTATION NAV --- */
 .presentation-nav {
   position: fixed; bottom: 20px; left: 20px;
-  background: rgba(15, 23, 42, 0.9);
-  padding: 8px 12px; border-radius: 15px;
+  background: rgba(15, 23, 42, 0.9); padding: 8px 12px; border-radius: 15px;
   display: flex; gap: 8px; align-items: center;
   box-shadow: 0 10px 20px rgba(0,0,0,0.2); z-index: 10000;
   border: 1px solid rgba(255,255,255,0.1);
@@ -116,14 +114,13 @@ button { cursor: pointer; border: none; font-weight: 700; border-radius: 18px; t
 .presentation-nav svg { width: 18px; height: 18px; fill: white; }
 .presentation-nav span { color: white; font-size: 0.75rem; font-weight: 700; }
 
-/* --- MODALS --- */
+/* Modals */
 .popup-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 10001; backdrop-filter: blur(12px); }
 .detail-modal { background: white; width: 95%; height: 92%; border-radius: 35px; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; }
 .detail-value { font-size: 6rem; font-weight: 900; margin-bottom: 30px; line-height: 1; word-break: break-all; }
 
-/* Sidebar Helpers */
+/* Color Circles */
 .color-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
 .circle { width: 32px; height: 32px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 6px rgba(0,0,0,0.1); cursor: pointer; }
-.pills-container { display: flex; flex-wrap: wrap; gap: 8px; max-height: 250px; overflow-y: auto; }
 .var-pill { padding: 10px 18px; background: white; border: 1px solid #e2e8f0; border-radius: 50px; font-size: 0.85rem; cursor: pointer; color: var(--dark); }
 .var-pill.selected { background: var(--orange-grad); color: white; border-color: transparent; }
