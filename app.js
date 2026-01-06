@@ -20,9 +20,9 @@ const iconHome = `<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 
 const iconLeft = `<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
 const iconRight = `<svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`;
 
-// --- INIT ---
+// --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('dataView_v52');
+    const saved = localStorage.getItem('dataView_master_v52');
     if (saved) views = JSON.parse(saved);
     const params = new URLSearchParams(window.location.search);
     const viewId = params.get('view');
@@ -33,12 +33,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function triggerSave() {
-    localStorage.setItem('dataView_v52', JSON.stringify(views));
+    localStorage.setItem('dataView_master_v52', JSON.stringify(views));
     const badge = document.getElementById('save-badge');
     if (badge) { badge.style.opacity = "1"; setTimeout(() => badge.style.opacity = "0", 1000); }
 }
 
-// --- MENUS ---
+// --- HOME & VIEW MENU (CENTERED 50%) ---
 function renderHome() {
     selectedBoxIdx = null;
     const app = document.getElementById('app');
@@ -58,7 +58,7 @@ function openMenu(id) {
 
 function openPresentationTab(id) { window.open(window.location.origin + window.location.pathname + '?view=' + id, '_blank'); }
 
-// --- SIDEBAR EDITOR ---
+// --- SIDEBAR ENGINE ---
 function renderEditCanvas() {
     const app = document.getElementById('app');
     app.innerHTML = `<div class="main-content"><aside class="editor-sidebar" id="sidebar">${renderSidebarContent()}</aside><main class="canvas-area"><div class="canvas-16-9" id="canvas-container" style="background:${currentView.canvasBg || '#ffffff'}"><div class="grid-overlay"></div><div id="boxes-layer"></div></div><button class="blue-btn" style="margin-top:30px; width:100%; max-width:300px;" onclick="openMenu('${currentView.createdAt}')">Save & Exit</button></main></div>`;
@@ -88,15 +88,13 @@ function renderBoxControls() {
     return `<div class="property-group"><h4>Label</h4><input type="text" value="${box.title}" oninput="syncBoxAttr(${selectedBoxIdx}, 'title', this.value)"></div><div class="property-group"><h4>Mode</h4><select onchange="setBoxMode(${selectedBoxIdx}, this.value === 'var')"><option value="const" ${!box.isVar ? 'selected' : ''}>Static</option><option value="var" ${box.isVar ? 'selected' : ''}>Variable</option></select></div><div class="property-group"><h4>Content</h4>${contentSection}</div><div class="property-group"><h4>Appearance</h4><div class="color-grid">${bgPresets.map(c => `<div class="circle" style="background:${c}" onclick="syncBoxAttr(${selectedBoxIdx}, 'bgColor', '${c}')"></div>`).join('')}</div><p style="margin-top:10px; font-size:0.7rem;">Text Color</p><div class="color-grid">${textPresets.map(c => `<div class="circle" style="background:${c}" onclick="syncBoxAttr(${selectedBoxIdx}, 'textColor', '${c}')"></div>`).join('')}</div><div style="display:flex; align-items:center; gap:10px; margin-top:20px;"><button class="blue-btn" style="padding:8px 15px;" onclick="syncBoxAttr(${selectedBoxIdx}, 'fontSize', ${box.fontSize - 4})">-</button><span>${box.fontSize}px</span><button class="blue-btn" style="padding:8px 15px;" onclick="syncBoxAttr(${selectedBoxIdx}, 'fontSize', ${box.fontSize + 4})">+</button></div></div><button class="danger-btn" style="width:100%;" onclick="deleteBox(${selectedBoxIdx})">Delete Box</button>`;
 }
 
-// --- NEW BOX LOGIC (Top Left Spawn) ---
+// --- BOX SPAWN & RENDER ---
 function addNewBoxDirectly(w, h) {
     const hasH = currentView.headers && currentView.headers.length > 0;
     currentView.boxes.push({ x: 0, y: 0, w: parseInt(w), h: parseInt(h), title: 'Label', textVal: hasH ? currentView.headers[0] : 'Value', isVar: hasH, bgColor: 'var(--light-grey)', textColor: '#000', fontSize: 24 });
-    triggerSave();
-    drawBoxes();
+    triggerSave(); drawBoxes();
 }
 
-// --- RENDER DESIGN ---
 function drawBoxes() {
     const layer = document.getElementById('boxes-layer'); if(!layer) return;
     layer.innerHTML = '';
@@ -104,6 +102,7 @@ function drawBoxes() {
         const div = document.createElement('div');
         div.className = `box-instance ${selectedBoxIdx === i ? 'selected-box' : ''}`;
         div.style.cssText = `left:${(box.x/6)*100}%; top:${(box.y/4)*100}%; --w-pct:${(box.w/6)*100}%; --h-pct:${(box.h/4)*100}%; background:${box.bgColor || 'var(--light-grey)'}; color:${box.textColor || 'black'};`;
+        // Design Filler
         const val = box.isVar ? "Variable" : box.textVal;
         div.innerHTML = `<div class="box-title" style="color:${box.textColor || 'black'};">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${val}</div>`;
         div.onmousedown = (e) => startDragExisting(e, i);
@@ -111,14 +110,12 @@ function drawBoxes() {
     });
 }
 
-// --- DRAG (CANVAS ONLY) ---
+// --- DRAG LOGIC (CANVAS ONLY) ---
 function startDragExisting(e, idx) {
     e.preventDefault(); dragIdx = idx; dragStartX = e.clientX; dragStartY = e.clientY;
     const original = e.currentTarget; const rect = original.getBoundingClientRect();
     const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
     draggingElement = original.cloneNode(true); draggingElement.classList.add('dragging');
-    draggingElement.setAttribute('data-w', currentView.boxes[idx].w);
-    draggingElement.setAttribute('data-h', currentView.boxes[idx].h);
     offset.x = e.clientX - rect.left; offset.y = e.clientY - rect.top;
     draggingElement.style.left = `${rect.left - containerRect.left}px`;
     draggingElement.style.top = `${rect.top - containerRect.top}px`;
@@ -141,7 +138,7 @@ function handleMouseUp(e) {
 window.addEventListener('mousemove', (e) => { if (!draggingElement) return; const rect = document.getElementById('canvas-container').getBoundingClientRect(); draggingElement.style.left = `${e.clientX - rect.left - offset.x}px`; draggingElement.style.top = `${e.clientY - rect.top - offset.y}px`; });
 window.addEventListener('mouseup', handleMouseUp);
 
-// --- PRESENTATION ---
+// --- PRESENTATION ENGINE ---
 function startPresentation() {
     document.getElementById('app').innerHTML = `<div class="presentation-fullscreen"><div class="slide-fit" id="slide-canvas" style="background:${currentView.canvasBg || '#ffffff'}"></div><div class="presentation-nav"><button onclick="window.close()">${iconHome}</button><span>${currentRowIndex+1} / ${currentView.data.length}</span><button onclick="prevSlide()">${iconLeft}</button><button onclick="nextSlide()">${iconRight}</button></div></div>`;
     renderSlideContent();
@@ -167,7 +164,7 @@ function updateViewName(val) { currentView.name = val; triggerSave(); }
 function updateCanvasBg(c) { currentView.canvasBg = c; document.getElementById('canvas-container').style.background = c; triggerSave(); }
 function deselectBox() { selectedBoxIdx = null; varSearchTerm = ""; refreshSidebar(); drawBoxes(); }
 function selectBox(idx) { selectedBoxIdx = idx; varSearchTerm = ""; refreshSidebar(); drawBoxes(); }
-function syncBoxAttr(idx, key, val) { currentView.boxes[idx][key] = val; triggerSave(); drawBoxes(); if(key==='fontSize') refreshSidebar(); }
+function syncBoxAttr(idx, key, val) { currentView.boxes[idx][key] = val; triggerSave(); drawBoxes(); if(key==='fontSize' || key==='textVal') refreshSidebar(); }
 function setBoxMode(idx, mode) { currentView.boxes[idx].isVar = mode; triggerSave(); refreshSidebar(); drawBoxes(); }
 function refreshSidebar() { const sb = document.getElementById('sidebar'); if(sb) sb.innerHTML = renderSidebarContent(); }
 function closePop() { const p = document.querySelector('.popup-overlay'); if(p) p.remove(); }
