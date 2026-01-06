@@ -1,5 +1,5 @@
 /**
- * DATA VIEW PRO - MASTER ENGINE v49.0
+ * DATA VIEW PRO - MASTER ENGINE v50.0
  */
 
 let views = [];
@@ -21,9 +21,9 @@ const iconHome = `<svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 
 const iconLeft = `<svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>`;
 const iconRight = `<svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>`;
 
-// --- PERSISTENCE ---
+// --- STORAGE ---
 document.addEventListener('DOMContentLoaded', () => {
-    const saved = localStorage.getItem('dataView_master_v49');
+    const saved = localStorage.getItem('dataView_master_v50');
     if (saved) views = JSON.parse(saved);
     const params = new URLSearchParams(window.location.search);
     const viewId = params.get('view');
@@ -34,12 +34,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function triggerSave() {
-    localStorage.setItem('dataView_master_v49', JSON.stringify(views));
+    localStorage.setItem('dataView_master_v50', JSON.stringify(views));
     const badge = document.getElementById('save-badge');
     if (badge) { badge.style.opacity = "1"; setTimeout(() => badge.style.opacity = "0", 1200); }
 }
 
-// --- NAVIGATION (CENTERED 50%) ---
+// --- CENTERED MENUS ---
 function renderHome() {
     selectedBoxIdx = null;
     const app = document.getElementById('app');
@@ -94,10 +94,10 @@ function renderEditCanvas() {
 
 function renderSidebarContent() {
     const isGlobal = selectedBoxIdx === null;
-    const excelBtnText = (currentView.data && currentView.data.length > 0) ? 'Change Excel Data' : 'Upload Excel Sheet';
+    const excelBtnText = (currentView.data && currentView.data.length > 0) ? 'Change Excel' : 'Upload Excel Sheet';
     return `
         <div class="sidebar-header">
-            <h3>${isGlobal ? 'Global Settings' : 'Edit Box'}</h3>
+            <h3>${isGlobal ? 'Global' : 'Edit Box'}</h3>
             <div id="save-badge">Saved</div>
             ${!isGlobal ? '<button onclick="deselectBox()" style="background:none; color:var(--dark); font-size:1.2rem; padding:0;">✕</button>' : ''}
         </div>
@@ -129,22 +129,22 @@ function renderBoxControls() {
     const hasData = currentView.headers && currentView.headers.length > 0;
     let contentSection = '';
     if (!box.isVar) {
-        contentSection = `<input type="text" value="${box.textVal}" oninput="syncBoxAttr(${selectedBoxIdx}, 'textVal', this.value)" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">`;
+        contentSection = `<input type="text" value="${box.textVal}" oninput="syncBoxAttr(${selectedBoxIdx}, 'textVal', this.value)" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd;">`;
     } else if (hasData) {
         const filtered = currentView.headers.filter(h => h.toLowerCase().includes(varSearchTerm.toLowerCase()));
         contentSection = `
-            <input type="text" placeholder="Search variables..." value="${varSearchTerm}" oninput="handleVarSearch(this.value)" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd; margin-bottom:10px;">
+            <input type="text" placeholder="Search variables..." value="${varSearchTerm}" oninput="handleVarSearch(this.value)" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd; margin-bottom:10px;">
             <div class="pills-container" id="pills-box">${filtered.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="syncBoxAttr(${selectedBoxIdx}, 'textVal', '${h}')">${h}</div>`).join('')}</div>`;
     } else { contentSection = `<button class="orange-btn" style="width:100%; font-size:0.8rem;" onclick="uploadExcel()">Upload Excel Data First</button>`; }
 
     return `
         <div class="property-group">
             <h4>Label</h4>
-            <input type="text" value="${box.title}" oninput="syncBoxAttr(${selectedBoxIdx}, 'title', this.value)" style="width:100%; padding:10px; border-radius:10px; border:1px solid #ddd;">
+            <input type="text" value="${box.title}" oninput="syncBoxAttr(${selectedBoxIdx}, 'title', this.value)" style="width:100%; padding:12px; border-radius:10px; border:1px solid #ddd;">
         </div>
         <div class="property-group">
             <h4>Mode</h4>
-            <select onchange="setBoxMode(${selectedBoxIdx}, this.value === 'var')" style="width:100%; padding:10px; border-radius:10px;">
+            <select onchange="setBoxMode(${selectedBoxIdx}, this.value === 'var')" style="width:100%; padding:12px; border-radius:10px;">
                 <option value="const" ${!box.isVar ? 'selected' : ''}>Static</option>
                 <option value="var" ${box.isVar ? 'selected' : ''}>Variable</option>
             </select>
@@ -167,7 +167,7 @@ function renderBoxControls() {
         <button class="danger-btn" style="width:100%;" onclick="deleteBox(${selectedBoxIdx})">Delete Box</button>`;
 }
 
-// --- CENTERED GHOST DRAG ---
+// --- GHOST DRAG (CENTERED & SIZED) ---
 function startDragNew(e, w, h) {
     e.preventDefault(); 
     const container = document.getElementById('canvas-container');
@@ -180,15 +180,13 @@ function startDragNew(e, w, h) {
     draggingElement.style.width = `${boxW}px`;
     draggingElement.style.height = `${boxH}px`;
     
-    // Logic: Center box on cursor
-    offset.x = boxW / 2;
-    offset.y = boxH / 2;
-    
-    draggingElement.innerHTML = `<div class="box-title" style="opacity:0.4">Label</div><div class="box-content" style="font-size:24px;">&lt;Placeholder&gt;</div>`;
+    // Display Dimension in center of Ghost Box
+    draggingElement.innerHTML = `<div class="box-content" style="font-size:2rem; color:black; font-weight:900;">${w}x${h}</div>`;
     draggingElement.setAttribute('data-w', w);
     draggingElement.setAttribute('data-h', h);
     
-    // Position it initially at cursor
+    offset.x = boxW / 2;
+    offset.y = boxH / 2;
     draggingElement.style.left = `${e.clientX - containerRect.left - offset.x}px`;
     draggingElement.style.top = `${e.clientY - containerRect.top - offset.y}px`;
     
@@ -206,10 +204,7 @@ function drawBoxes() {
         const div = document.createElement('div');
         div.className = `box-instance ${selectedBoxIdx === i ? 'selected-box' : ''}`;
         div.style.cssText = `left:${(box.x/6)*100}%; top:${(box.y/4)*100}%; --w-pct:${(box.w/6)*100}%; --h-pct:${(box.h/4)*100}%; background:${box.bgColor || 'var(--light-grey)'}; color:${box.textColor || 'black'};`;
-        
-        // Use <Name> carrots for variable design filler
         const val = box.isVar ? `<${box.textVal}>` : box.textVal;
-        
         div.innerHTML = `<div class="box-title" style="color:${box.textColor || 'black'};">${box.title}</div><div class="box-content" style="font-size:${box.fontSize}px;">${val}</div>`;
         div.onmousedown = (e) => startDragExisting(e, i);
         layer.appendChild(div);
@@ -231,13 +226,14 @@ function renderSlide() {
     });
 }
 
-// --- STANDARD WRAPPERS & HELPERS ---
 function openLargePopup(idx, val) { 
     const box = currentView.boxes[idx]; 
     const overlay = document.createElement('div'); overlay.className = 'popup-overlay'; 
     overlay.innerHTML = `<div class="detail-modal"><div style="font-size:1.4rem; color:var(--slate); margin-bottom:10px; text-transform:uppercase;">${box.title}</div><div class="detail-value" style="color:${box.textColor}">${val}</div><div style="display:flex; gap:20px;">${box.isVar ? `<button class="orange-btn" onclick="editLiveValue(${idx})">Edit Value</button>` : ''}<button class="blue-btn" style="background:var(--slate)" onclick="closePop()">Close</button></div></div>`; 
     document.body.appendChild(overlay); 
 }
+
+// --- SYNC & HELPERS ---
 function handleVarSearch(val) { varSearchTerm = val; const pillsBox = document.getElementById('pills-box'); if(pillsBox) { const box = currentView.boxes[selectedBoxIdx]; const filtered = currentView.headers.filter(h => h.toLowerCase().includes(varSearchTerm.toLowerCase())); pillsBox.innerHTML = filtered.map(h => `<div class="var-pill ${box.textVal === h ? 'selected' : ''}" onclick="syncBoxAttr(${selectedBoxIdx}, 'textVal', '${h}')">${h}</div>`).join(''); } }
 function updateViewName(val) { currentView.name = val; triggerSave(); }
 function updateCanvasBg(c) { currentView.canvasBg = c; document.getElementById('canvas-container').style.background = c; triggerSave(); }
@@ -249,7 +245,7 @@ function refreshSidebar() { const sb = document.getElementById('sidebar'); if(sb
 function closePop() { const p = document.querySelector('.popup-overlay'); if(p) p.remove(); }
 function nextSlide() { if(currentRowIndex < currentView.data.length - 1) { currentRowIndex++; renderSlide(); } }
 function prevSlide() { if(currentRowIndex > 0) { currentRowIndex--; renderSlide(); } }
-function deleteView(id) { if(confirm("Delete View?")) { views = views.filter(v => v.createdAt != id); triggerSave(); renderHome(); } }
+function deleteView(id) { if(confirm("Delete?")) { views = views.filter(v => v.createdAt != id); triggerSave(); renderHome(); } }
 function deleteBox(i) { currentView.boxes.splice(i,1); triggerSave(); deselectBox(); }
 function createNewView() { const name = prompt("Name:", "New View"); if(name) { currentView = { name, createdAt: Date.now(), boxes: [], data: [], headers: [], history: [] }; views.push(currentView); triggerSave(); renderEditCanvas(); } }
 function editLiveValue(idx) { const box = currentView.boxes[idx]; const oldVal = currentView.data[currentRowIndex][box.textVal] || '---'; const newVal = prompt(`Edit ${box.textVal}:`, oldVal); if (newVal !== null && newVal !== oldVal) { if (!currentView.history) currentView.history = []; currentView.history.push({ time: new Date().toLocaleTimeString(), row: currentRowIndex+1, col: box.textVal, old: oldVal, new: newVal }); currentView.data[currentRowIndex][box.textVal] = newVal; triggerSave(); closePop(); renderSlide(); } }
